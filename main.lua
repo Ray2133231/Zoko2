@@ -1,4 +1,4 @@
--- [[ Zoko Hub V3 - Ultimate Glass Edition (Perfect Skins & Fly) ]]
+-- [[ Zoko Hub V3 - Ultimate Glass Edition (Perfect Outfits & Fly) ]]
 
 local Player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -152,7 +152,7 @@ local function Notify(titleText, descText, color)
 end
 
 -- ==========================================
--- نظام حفظ الأطقم الدائم (Permanent Skins System)
+-- نظام حفظ الأطقم الدائم والأكيد (Anti-Naked System)
 -- ==========================================
 local SavedSkins = {}
 local SkinToDelete = ""
@@ -173,6 +173,17 @@ local function LoadDataFromFile()
     end
 end
 LoadDataFromFile()
+
+-- دالة لاستخراج ID اللبس إذا كان رابط أو رقم
+local function GetAssetId(str)
+    if type(str) == "string" then
+        local id = string.match(str, "%d+")
+        return id and tonumber(id) or 0
+    elseif type(str) == "number" then
+        return str
+    end
+    return 0
+end
 
 local function CreateBaseButton(text, parent, order)
     local btn = Instance.new("TextButton")
@@ -268,31 +279,37 @@ local function RefreshSkinsUI()
         btn.MouseButton1Click:Connect(function()
             if isApplying then return end
             isApplying = true
-            if Player.Character and Player.Character:FindFirstChild("Humanoid") then
-                -- إنشاء نسخة جديدة من الطقم عشان ما يخرب لو مت
-                local newDesc = Instance.new("HumanoidDescription")
-                for k, v in pairs(skinProps) do 
-                    pcall(function() newDesc[k] = v end) 
-                end
+            local char = Player.Character
+            if char and char:FindFirstChild("Humanoid") then
                 
-                local success = pcall(function()
-                    Player.Character.Humanoid:ApplyDescription(newDesc)
+                -- الطريقة الأولى: تطبيق الإكسسوارات الرسمية
+                local newDesc = char.Humanoid:GetAppliedDescription()
+                for k, v in pairs(skinProps) do pcall(function() newDesc[k] = v end) end
+                pcall(function() char.Humanoid:ApplyDescription(newDesc) end)
+                
+                -- الطريقة الثانية (التركيب الإجباري): عشان يمنع مشكلة الاختفاء إذا الماب محمي
+                pcall(function()
+                    if skinProps.Shirt and skinProps.Shirt ~= 0 then
+                        local shirt = char:FindFirstChildOfClass("Shirt") or Instance.new("Shirt", char)
+                        shirt.ShirtTemplate = "rbxassetid://" .. skinProps.Shirt
+                    end
+                    if skinProps.Pants and skinProps.Pants ~= 0 then
+                        local pants = char:FindFirstChildOfClass("Pants") or Instance.new("Pants", char)
+                        pants.PantsTemplate = "rbxassetid://" .. skinProps.Pants
+                    end
+                    if skinProps.GraphicTShirt and skinProps.GraphicTShirt ~= 0 then
+                        local tshirt = char:FindFirstChildOfClass("ShirtGraphic") or Instance.new("ShirtGraphic", char)
+                        tshirt.Graphic = "rbxassetid://" .. skinProps.GraphicTShirt
+                    end
+                    if skinProps.Face and skinProps.Face ~= 0 then
+                        local head = char:FindFirstChild("Head")
+                        if head then
+                            local face = head:FindFirstChildOfClass("Decal") or Instance.new("Decal", head)
+                            face.Texture = "rbxassetid://" .. skinProps.Face
+                        end
+                    end
                 end)
                 
-                -- لو السيرفر منع التركيب التلقائي، نركب اللبس الأساسي يدوياً (Fallback)
-                if not success then
-                    pcall(function()
-                        local char = Player.Character
-                        local shirt = char:FindFirstChildOfClass("Shirt") or Instance.new("Shirt", char)
-                        if skinProps.Shirt ~= 0 then shirt.ShirtTemplate = "rbxassetid://" .. skinProps.Shirt end
-                        
-                        local pants = char:FindFirstChildOfClass("Pants") or Instance.new("Pants", char)
-                        if skinProps.Pants ~= 0 then pants.PantsTemplate = "rbxassetid://" .. skinProps.Pants end
-                        
-                        local face = char:FindFirstChild("Head") and char.Head:FindFirstChildOfClass("Decal")
-                        if face and skinProps.Face ~= 0 then face.Texture = "rbxassetid://" .. skinProps.Face end
-                    end)
-                end
                 Notify("Zoko Skins", "تم تطبيق الطقم: " .. skinName, Color3.fromRGB(0, 255, 127))
             end
             task.wait(0.5)
@@ -313,16 +330,27 @@ BtnCancelOutfit.MouseButton1Click:Connect(function() ModalAdd.Visible = false en
 
 BtnSaveOutfit.MouseButton1Click:Connect(function()
     local name = OutfitNameInput.Text
-    if name ~= "" and Player.Character and Player.Character:FindFirstChild("Humanoid") then
-        local currentDesc = Player.Character.Humanoid:GetAppliedDescription()
+    local char = Player.Character
+    if name ~= "" and char and char:FindFirstChild("Humanoid") then
+        local currentDesc = char.Humanoid:GetAppliedDescription()
         
-        -- نحفظ الخصائص كأرقام ونصوص عشان ما تتلف بالمستقبل
+        -- سحب الملابس مباشرة من الشخصية لضمان عدم وجود أخطاء من الماب
+        local cShirt = char:FindFirstChildOfClass("Shirt")
+        local cPants = char:FindFirstChildOfClass("Pants")
+        local cTShirt = char:FindFirstChildOfClass("ShirtGraphic")
+        local head = char:FindFirstChild("Head")
+        local cFace = head and head:FindFirstChildOfClass("Decal")
+        
         local data = {
             HatAccessory = currentDesc.HatAccessory, HairAccessory = currentDesc.HairAccessory, FaceAccessory = currentDesc.FaceAccessory,
             NeckAccessory = currentDesc.NeckAccessory, ShouldersAccessory = currentDesc.ShouldersAccessory, FrontAccessory = currentDesc.FrontAccessory,
-            BackAccessory = currentDesc.BackAccessory, WaistAccessory = currentDesc.WaistAccessory, Shirt = currentDesc.Shirt, Pants = currentDesc.Pants,
-            GraphicTShirt = currentDesc.GraphicTShirt, Face = currentDesc.Face, Head = currentDesc.Head, Torso = currentDesc.Torso,
-            LeftArm = currentDesc.LeftArm, RightArm = currentDesc.RightArm, LeftLeg = currentDesc.LeftLeg, RightLeg = currentDesc.RightLeg
+            BackAccessory = currentDesc.BackAccessory, WaistAccessory = currentDesc.WaistAccessory,
+            
+            -- حفظ الأيدي الأكيد والمضمون
+            Shirt = cShirt and GetAssetId(cShirt.ShirtTemplate) or currentDesc.Shirt,
+            Pants = cPants and GetAssetId(cPants.PantsTemplate) or currentDesc.Pants,
+            GraphicTShirt = cTShirt and GetAssetId(cTShirt.Graphic) or currentDesc.GraphicTShirt,
+            Face = cFace and GetAssetId(cFace.Texture) or currentDesc.Face
         }
         
         SavedSkins[name] = data
@@ -463,7 +491,7 @@ BtnGod.MouseButton1Click:Connect(function()
     BtnGod.TextColor3 = Features.GodMode and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
 end)
 
--- الطيران (مع تعديل الـ Shift والـ Q والـ Z)
+-- برمجة الطيران الجديدة (Q فوق / Z تحت / Shift بوست سرعة)
 local FlyLoop
 BtnFly.MouseButton1Click:Connect(function()
     Features.Fly = not Features.Fly
@@ -495,17 +523,19 @@ BtnFly.MouseButton1Click:Connect(function()
         FlyLoop = RunService.RenderStepped:Connect(function()
             local cam = workspace.CurrentCamera
             local move = Vector3.new(0,0,0)
-            local speed = 2.0 -- السرعة العادية
+            local speed = 2.0 -- السرعة الأساسية
             
-            -- زيادة السرعة بالضغط على Shift
-            if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then speed = 5.0 end
+            -- بوست السرعة إذا كان ضاغط شفت
+            if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then speed = 8.0 end 
             
             if UIS:IsKeyDown(Enum.KeyCode.W) then move = move + cam.CFrame.LookVector end
             if UIS:IsKeyDown(Enum.KeyCode.S) then move = move - cam.CFrame.LookVector end
             if UIS:IsKeyDown(Enum.KeyCode.D) then move = move + cam.CFrame.RightVector end
             if UIS:IsKeyDown(Enum.KeyCode.A) then move = move - cam.CFrame.RightVector end
-            if UIS:IsKeyDown(Enum.KeyCode.Space) or UIS:IsKeyDown(Enum.KeyCode.Q) then move = move + Vector3.new(0,1,0) end -- Q يرفعك
-            if UIS:IsKeyDown(Enum.KeyCode.Z) then move = move - Vector3.new(0,1,0) end -- Z ينزلك
+            
+            -- التحكم بالارتفاع والنزول
+            if UIS:IsKeyDown(Enum.KeyCode.Q) then move = move + Vector3.new(0,1,0) end -- Q للارتفاع
+            if UIS:IsKeyDown(Enum.KeyCode.Z) then move = move - Vector3.new(0,1,0) end -- Z للنزول
             
             hrp.Velocity = Vector3.new(0,0,0)
             hrp.CFrame = hrp.CFrame + (move * speed)
@@ -634,18 +664,18 @@ DevBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- زر الريستارت الجديد (RESTART) بتصميم مطابق لخط Zoko
+-- زر الريستارت الجديد (RESTART) بتصميم مطابق لـ كلمة ZOKO
 local RestartBtn = Instance.new("TextButton")
-RestartBtn.Size = UDim2.new(1, 0, 0, 15)
-RestartBtn.Position = UDim2.new(0, 0, 1, -20)
+RestartBtn.Size = UDim2.new(1, 0, 0, 20)
+RestartBtn.Position = UDim2.new(0, 0, 1, -22)
 RestartBtn.BackgroundTransparency = 1
-RestartBtn.RichText = true
-RestartBtn.Text = "<b>RESTART</b>"
+RestartBtn.Text = "RESTART"
 RestartBtn.TextColor3 = Color3.fromRGB(0, 212, 255)
-RestartBtn.Font = Enum.Font.GothamBlack
-RestartBtn.TextSize = 13
+RestartBtn.Font = Enum.Font.GothamBlack -- نفس خط العنوان
+RestartBtn.TextSize = 16 -- حجم مشابه ومناسب
 RestartBtn.Parent = MainFrame
 
+-- تأثير Glow لزر الريستارت
 local RestartGlow = Instance.new("UIStroke")
 RestartGlow.Color = Color3.fromRGB(0, 212, 255)
 RestartGlow.Transparency = 0.5
