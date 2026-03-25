@@ -1,4 +1,4 @@
--- [[ Zoko Hub V3 - Ultimate Glass Edition (Absolute Clone Outfits & Fly) ]]
+-- [[ Zoko Hub V4 - Ultimate Glass Edition (Perfect Native Clone & Fly) ]]
 
 local Player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -151,12 +151,23 @@ local function Notify(titleText, descText, color)
 end
 
 -- ==========================================
--- نظام النسخ الفيزيائي للأطقم (Absolute Clone)
+-- نظام حفظ الأطقم الأصلي والعميق (Native Cloning)
 -- ==========================================
 local SavedSkins = {}
 local SkinToDelete = ""
--- تم تغيير اسم الملف عشان يبدأ حفظ نظيف وبدون اخطاء
-local FileName = "ZokoHub_PerfectSkins.json"
+-- تم تغيير اسم الملف إلى V4 لتنظيف الأطقم المكسورة السابقة
+local FileName = "ZokoHub_V4_Skins.json"
+
+-- الخصائص اللي بينسخها النظام (كل شي حرفياً)
+local DescProps = {
+    "HatAccessory", "HairAccessory", "FaceAccessory", "NeckAccessory", "ShouldersAccessory", "FrontAccessory", "BackAccessory", "WaistAccessory",
+    "Shirt", "Pants", "GraphicTShirt", "Face", "Head", "Torso", "LeftArm", "RightArm", "LeftLeg", "RightLeg",
+    "DepthScale", "HeadScale", "HeightScale", "ProportionScale", "WidthScale", "BodyTypeScale",
+    "ClimbAnimation", "FallAnimation", "IdleAnimation", "JumpAnimation", "RunAnimation", "SwimAnimation", "WalkAnimation"
+}
+local ColorProps = {
+    "HeadColor", "LeftArmColor", "LeftLegColor", "RightArmColor", "RightLegColor", "TorsoColor"
+}
 
 local function SaveDataToFile()
     if writefile then
@@ -194,7 +205,6 @@ BtnBackToMenu.TextColor3 = Color3.fromRGB(255, 100, 100)
 local BtnAddOutfit = CreateBaseButton("اضافة طقم", SkinsScroll, 2)
 BtnAddOutfit.TextColor3 = Color3.fromRGB(0, 255, 127)
 
--- نوافذ السكنات
 local ModalAdd = Instance.new("Frame", MainFrame)
 ModalAdd.Size = UDim2.new(1, 0, 1, 0)
 ModalAdd.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
@@ -263,94 +273,74 @@ local function RefreshSkinsUI()
         local btn = CreateBaseButton(skinName, SkinsScroll, 10)
         local isApplying = false
         
-        -- تطبيق السكن (بناء الشخصية بقوة)
+        -- تطبيق الطقم
         btn.MouseButton1Click:Connect(function()
             if isApplying then return end
             isApplying = true
             local char = Player.Character
             if char and char:FindFirstChild("Humanoid") then
                 
-                -- 1. مسح كل الملابس والملحقات الحالية
-                for _, obj in pairs(char:GetChildren()) do
-                    if obj:IsA("Accessory") or obj:IsA("Shirt") or obj:IsA("Pants") or obj:IsA("ShirtGraphic") then
-                        obj:Destroy()
-                    end
-                end
-                
-                -- 2. إرجاع الملابس (نسخ لصق)
-                if skinProps.Shirt and skinProps.Shirt ~= "" then
-                    local s = Instance.new("Shirt", char)
-                    s.ShirtTemplate = skinProps.Shirt
-                end
-                if skinProps.Pants and skinProps.Pants ~= "" then
-                    local p = Instance.new("Pants", char)
-                    p.PantsTemplate = skinProps.Pants
-                end
-                if skinProps.TShirt and skinProps.TShirt ~= "" then
-                    local t = Instance.new("ShirtGraphic", char)
-                    t.Graphic = skinProps.TShirt
-                end
-                
-                -- 3. إرجاع الوجه
-                local head = char:FindFirstChild("Head")
-                if head then
-                    local face = head:FindFirstChildOfClass("Decal") or Instance.new("Decal", head)
-                    face.Texture = skinProps.Face or ""
-                end
-                
-                -- 4. إرجاع لون البشرة والجسم
-                if skinProps.BodyColors then
-                    local bc = char:FindFirstChildOfClass("BodyColors") or Instance.new("BodyColors", char)
-                    pcall(function() bc.HeadColor3 = Color3.fromHex(skinProps.BodyColors.Head) end)
-                    pcall(function() bc.TorsoColor3 = Color3.fromHex(skinProps.BodyColors.Torso) end)
-                    pcall(function() bc.LeftArmColor3 = Color3.fromHex(skinProps.BodyColors.LeftArm) end)
-                    pcall(function() bc.RightArmColor3 = Color3.fromHex(skinProps.BodyColors.RightArm) end)
-                    pcall(function() bc.LeftLegColor3 = Color3.fromHex(skinProps.BodyColors.LeftLeg) end)
-                    pcall(function() bc.RightLegColor3 = Color3.fromHex(skinProps.BodyColors.RightLeg) end)
-                end
-                
-                -- 5. إرجاع القبعات والشعر والنظارات بدقة
-                if skinProps.Accessories then
-                    for _, accData in pairs(skinProps.Accessories) do
-                        local acc = Instance.new("Accessory")
-                        acc.Name = accData.Name
-                        
-                        local handle = Instance.new("Part")
-                        handle.Name = "Handle"
-                        handle.Size = Vector3.new(1, 1, 1)
-                        handle.Transparency = accData.Transparency or 0
-                        handle.CanCollide = false
-                        pcall(function() handle.Color = Color3.fromHex(accData.Color) end)
-                        pcall(function() handle.Material = Enum.Material[accData.Material] end)
-                        handle.Parent = acc
-                        
-                        local mesh = Instance.new("SpecialMesh")
-                        mesh.MeshId = accData.MeshId
-                        mesh.TextureId = accData.TextureId
-                        mesh.Scale = Vector3.new(accData.Scale.X, accData.Scale.Y, accData.Scale.Z)
-                        if accData.Offset then mesh.Offset = Vector3.new(accData.Offset.X, accData.Offset.Y, accData.Offset.Z) end
-                        if accData.VertexColor then mesh.VertexColor = Vector3.new(accData.VertexColor.X, accData.VertexColor.Y, accData.VertexColor.Z) end
-                        mesh.Parent = handle
-                        
-                        if accData.AttName and accData.AttName ~= "" then
-                            local att = Instance.new("Attachment")
-                            att.Name = accData.AttName
-                            att.Position = Vector3.new(accData.AttPos.X, accData.AttPos.Y, accData.AttPos.Z)
-                            att.Orientation = Vector3.new(accData.AttOri.X, accData.AttOri.Y, accData.AttOri.Z)
-                            att.Parent = handle
+                -- بناء الوصف الدقيق للطقم
+                pcall(function()
+                    local newDesc = Instance.new("HumanoidDescription")
+                    
+                    if skinProps.Props then
+                        for k, v in pairs(skinProps.Props) do
+                            pcall(function() newDesc[k] = v end)
                         end
-                        
-                        char.Humanoid:AddAccessory(acc)
                     end
-                end
+                    
+                    if skinProps.Colors then
+                        for k, v in pairs(skinProps.Colors) do
+                            pcall(function() newDesc[k] = Color3.fromHex(v) end)
+                        end
+                    end
+                    
+                    -- محرك روبلوكس الرسمي لتغيير الشخصية (ينسخ كل شي بأمان)
+                    char.Humanoid:ApplyDescription(newDesc)
+                end)
                 
-                -- 6. مقاسات الجسم
-                if skinProps.Scales then
-                    for scaleName, scaleValue in pairs(skinProps.Scales) do
-                        local val = char.Humanoid:FindFirstChild(scaleName)
-                        if val and val:IsA("NumberValue") then val.Value = scaleValue end
+                -- نظام احتياطي للملابس والوجه (فقط لضمان عدم بقاءك بدون ملابس)
+                task.wait(0.2)
+                pcall(function()
+                    local function getCleanId(val)
+                        local id = string.match(tostring(val), "%d+")
+                        if id and id ~= "0" then return "rbxassetid://" .. id end
+                        return nil
                     end
-                end
+
+                    if skinProps.Props.Shirt then
+                        local sId = getCleanId(skinProps.Props.Shirt)
+                        if sId then
+                            local shirt = char:FindFirstChildOfClass("Shirt") or Instance.new("Shirt", char)
+                            shirt.ShirtTemplate = sId
+                        end
+                    end
+                    if skinProps.Props.Pants then
+                        local pId = getCleanId(skinProps.Props.Pants)
+                        if pId then
+                            local pants = char:FindFirstChildOfClass("Pants") or Instance.new("Pants", char)
+                            pants.PantsTemplate = pId
+                        end
+                    end
+                    if skinProps.Props.GraphicTShirt then
+                        local tId = getCleanId(skinProps.Props.GraphicTShirt)
+                        if tId then
+                            local tshirt = char:FindFirstChildOfClass("ShirtGraphic") or Instance.new("ShirtGraphic", char)
+                            tshirt.Graphic = tId
+                        end
+                    end
+                    if skinProps.Props.Face then
+                        local fId = getCleanId(skinProps.Props.Face)
+                        if fId then
+                            local head = char:FindFirstChild("Head")
+                            if head then
+                                local face = head:FindFirstChildOfClass("Decal") or Instance.new("Decal", head)
+                                face.Texture = fId
+                            end
+                        end
+                    end
+                end)
                 
                 Notify("Zoko Skins", "تم تطبيق الطقم: " .. skinName, Color3.fromRGB(0, 255, 127))
             end
@@ -369,98 +359,27 @@ RefreshSkinsUI()
 BtnAddOutfit.MouseButton1Click:Connect(function() ModalAdd.Visible = true OutfitNameInput.Text = "" end)
 BtnCancelOutfit.MouseButton1Click:Connect(function() ModalAdd.Visible = false end)
 
--- حفظ السكن (تصوير كامل لكل تفاصيل الجسم)
+-- حفظ الطقم (يأخذ نسخة من كل تفاصيل المودل الأصلي)
 BtnSaveOutfit.MouseButton1Click:Connect(function()
     local name = OutfitNameInput.Text
     local char = Player.Character
-    if name ~= "" and char then
-        local data = { Accessories = {}, Scales = {} }
+    if name ~= "" and char and char:FindFirstChild("Humanoid") then
+        local currentDesc = char.Humanoid:GetAppliedDescription()
+        local data = { Props = {}, Colors = {} }
         
-        -- الملابس
-        local shirt = char:FindFirstChildOfClass("Shirt")
-        data.Shirt = shirt and shirt.ShirtTemplate or ""
-        
-        local pants = char:FindFirstChildOfClass("Pants")
-        data.Pants = pants and pants.PantsTemplate or ""
-        
-        local tshirt = char:FindFirstChildOfClass("ShirtGraphic")
-        data.TShirt = tshirt and tshirt.Graphic or ""
-        
-        -- الفيس
-        local head = char:FindFirstChild("Head")
-        local face = head and head:FindFirstChildOfClass("Decal")
-        data.Face = face and face.Texture or ""
-        
-        -- لون البشرة
-        local bc = char:FindFirstChildOfClass("BodyColors")
-        if bc then
-            data.BodyColors = {
-                Head = bc.HeadColor3:ToHex(),
-                Torso = bc.TorsoColor3:ToHex(),
-                LeftArm = bc.LeftArmColor3:ToHex(),
-                RightArm = bc.RightArmColor3:ToHex(),
-                LeftLeg = bc.LeftLegColor3:ToHex(),
-                RightLeg = bc.RightLegColor3:ToHex(),
-            }
+        for _, prop in ipairs(DescProps) do
+            pcall(function() data.Props[prop] = currentDesc[prop] end)
         end
         
-        -- نسخ كل القبعات والإكسسوارات اللي عليك
-        for _, obj in pairs(char:GetChildren()) do
-            if obj:IsA("Accessory") then
-                local handle = obj:FindFirstChild("Handle")
-                if handle then
-                    local meshId, textureId = "", ""
-                    local scale, vColor, meshOffset = {X=1,Y=1,Z=1}, {X=1,Y=1,Z=1}, {X=0,Y=0,Z=0}
-                    
-                    if handle:IsA("MeshPart") then
-                        meshId = handle.MeshId
-                        textureId = handle.TextureID
-                        scale = {X=handle.Size.X, Y=handle.Size.Y, Z=handle.Size.Z}
-                    else
-                        local mesh = handle:FindFirstChildOfClass("SpecialMesh")
-                        if mesh then
-                            meshId = mesh.MeshId
-                            textureId = mesh.TextureId
-                            scale = {X=mesh.Scale.X, Y=mesh.Scale.Y, Z=mesh.Scale.Z}
-                            vColor = {X=mesh.VertexColor.X, Y=mesh.VertexColor.Y, Z=mesh.VertexColor.Z}
-                            meshOffset = {X=mesh.Offset.X, Y=mesh.Offset.Y, Z=mesh.Offset.Z}
-                        end
-                    end
-                    
-                    local att = handle:FindFirstChildOfClass("Attachment")
-                    table.insert(data.Accessories, {
-                        Name = obj.Name,
-                        MeshId = meshId,
-                        TextureId = textureId,
-                        Scale = scale,
-                        Offset = meshOffset,
-                        VertexColor = vColor,
-                        Color = handle.Color:ToHex(),
-                        Transparency = handle.Transparency,
-                        Material = handle.Material.Name,
-                        AttName = att and att.Name or "",
-                        AttPos = att and {X=att.Position.X, Y=att.Position.Y, Z=att.Position.Z} or {X=0,Y=0,Z=0},
-                        AttOri = att and {X=att.Orientation.X, Y=att.Orientation.Y, Z=att.Orientation.Z} or {X=0,Y=0,Z=0}
-                    })
-                end
-            end
-        end
-        
-        -- حجم الجسم
-        local hum = char:FindFirstChild("Humanoid")
-        if hum then
-            for _, val in pairs(hum:GetChildren()) do
-                if val:IsA("NumberValue") and string.find(val.Name, "Scale") then
-                    data.Scales[val.Name] = val.Value
-                end
-            end
+        for _, prop in ipairs(ColorProps) do
+            pcall(function() data.Colors[prop] = currentDesc[prop]:ToHex() end)
         end
         
         SavedSkins[name] = data
         SaveDataToFile()
         RefreshSkinsUI()
         ModalAdd.Visible = false
-        Notify("Zoko Skins", "تم حفظ الطقم المستنسخ بنجاح!", Color3.fromRGB(0, 255, 127))
+        Notify("Zoko Skins", "تم حفظ الطقم العميق بنجاح!", Color3.fromRGB(0, 255, 127))
     end
 end)
 
