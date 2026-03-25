@@ -4,7 +4,7 @@ local Player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
 
--- 1. الواجهة والأنميشن (نفس التصميم الفخم لزوكو)
+-- 1. إعداد الواجهة (تصميم زوكو الفخم)
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "Zoko_V4"
 ScreenGui.Parent = Player:WaitForChild("PlayerGui")
@@ -27,35 +27,50 @@ Scroll.Size = UDim2.new(1, 0, 1, -80)
 Scroll.Position = UDim2.new(0, 0, 0, 45)
 Scroll.BackgroundTransparency = 1
 Scroll.CanvasSize = UDim2.new(0, 0, 0, 500)
+Scroll.ScrollBarThickness = 3
 Instance.new("UIListLayout", Scroll).HorizontalAlignment = Enum.HorizontalAlignment.Center
 Instance.new("UIListLayout", Scroll).Padding = UDim.new(0, 10)
 
--- 2. ميزات الاختفاء المطلق (Server-Side Invisible)
-local GhostActive = false
-local FakeMeActive = false
+-- 2. دوال الإشعارات والمزايا
+local function Notify(title, desc)
+    -- نظام إشعارات مبسط وسريع
+    game:GetService("StarterGui"):SetCore("SendNotification", {Title = title, Text = desc, Duration = 3})
+end
+
+local Features = {God = false, Ghost = false, Fly = false, Speed = 16}
 local SavedPos = nil
 
-local function FullInvisible(state)
+-- 3. برمجة الاختفاء المطلق (Server-Side Invisible)
+local function ToggleGhost(state)
     local char = Player.Character
-    if not char or not char:FindFirstChild("LowerTorso") then return end
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
     
     if state then
-        -- خدعة السيرفر: رفع الشخصية عالياً جداً أو تحت الأرض
-        SavedPos = char.PrimaryPart.CFrame
-        char:MoveTo(Vector3.new(0, 999999, 0)) -- السيرفر يشوفك في السماء
-        Notify("Ghost Active", "أنت الآن غير مرئي تماماً للسيرفر")
+        SavedPos = char.HumanoidRootPart.CFrame
+        -- نقل الجسم لمكان بعيد جداً (السيرفر لن يرندر جسمك للاعبين)
+        char.HumanoidRootPart.CFrame = CFrame.new(0, 50000, 0) 
+        Notify("Ghost ON", "أنت الآن مخفي تماماً عن السيرفر واللاعبين")
     else
-        if SavedPos then char.PrimaryPart.CFrame = SavedPos end
-        Notify("Ghost Disabled", "عدت للظهور")
+        if SavedPos then char.HumanoidRootPart.CFrame = SavedPos end
+        Notify("Ghost OFF", "عدت للظهور مجدداً")
     end
 end
 
--- 3. نظام الطيران المحسن (Noclip Fly)
-local Flying = false
-local FlySpeed = 2
+-- 4. حلقة التحكم المستمر (فرض الخصائص)
 RunService.RenderStepped:Connect(function()
-    if Flying and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
-        local hrp = Player.Character.HumanoidRootPart
+    local char = Player.Character
+    if not char or not char:FindFirstChild("Humanoid") then return end
+    
+    -- قود مود ثابت
+    if Features.God then
+        char.Humanoid.Health = char.Humanoid.MaxHealth
+        char.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
+        char.Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+    end
+    
+    -- طيران واختراق جدران
+    if Features.Fly then
+        local hrp = char.HumanoidRootPart
         local cam = workspace.CurrentCamera
         local move = Vector3.new(0,0,0)
         if UIS:IsKeyDown(Enum.KeyCode.W) then move = move + cam.CFrame.LookVector end
@@ -63,17 +78,16 @@ RunService.RenderStepped:Connect(function()
         if UIS:IsKeyDown(Enum.KeyCode.D) then move = move + cam.CFrame.RightVector end
         if UIS:IsKeyDown(Enum.KeyCode.A) then move = move - cam.CFrame.RightVector end
         hrp.Velocity = Vector3.new(0,0,0)
-        hrp.CFrame = hrp.CFrame + (move * FlySpeed)
+        hrp.CFrame = hrp.CFrame + (move * 2)
         
-        -- Noclip: المرور عبر الجدران
-        for _, v in pairs(Player.Character:GetDescendants()) do
+        for _, v in pairs(char:GetDescendants()) do
             if v:IsA("BasePart") then v.CanCollide = false end
         end
     end
 end)
 
--- 4. أزرار المزايا
-local function CreateBtn(txt)
+-- 5. إنشاء الأزرار
+local function CreateBtn(txt, callback)
     local b = Instance.new("TextButton", Scroll)
     b.Size = UDim2.new(0.9, 0, 0, 35)
     b.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
@@ -81,34 +95,36 @@ local function CreateBtn(txt)
     b.TextColor3 = Color3.fromRGB(255, 255, 255)
     b.Font = Enum.Font.GothamBold
     Instance.new("UICorner", b).CornerRadius = UDim.new(0, 8)
+    b.MouseButton1Click:Connect(function() callback(b) end)
     return b
 end
 
-local BtnGod = CreateBtn("God Mode: OFF")
-local BtnGhost = CreateBtn("Server-Side Invisible: OFF")
-local BtnFly = CreateBtn("Fly (Noclip): OFF")
-
--- برمجة الأزرار
-BtnGhost.MouseButton1Click:Connect(function()
-    GhostActive = not GhostActive
-    BtnGhost.Text = GhostActive and "Server-Side Invisible: ON" or "Server-Side Invisible: OFF"
-    BtnGhost.TextColor3 = GhostActive and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(255, 255, 255)
-    FullInvisible(GhostActive)
+CreateBtn("God Mode: OFF", function(b)
+    Features.God = not Features.God
+    b.Text = Features.God and "God Mode: ON" or "God Mode: OFF"
+    b.TextColor3 = Features.God and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(255, 255, 255)
 end)
 
-BtnFly.MouseButton1Click:Connect(function()
-    Flying = not Flying
-    BtnFly.Text = Flying and "Fly (Noclip): ON" or "Fly (Noclip): OFF"
-    BtnFly.TextColor3 = Flying and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(255, 255, 255)
-    if not Flying then
+CreateBtn("Server-Side Ghost: OFF", function(b)
+    Features.Ghost = not Features.Ghost
+    b.Text = Features.Ghost and "Ghost: ON" or "Ghost: OFF"
+    b.TextColor3 = Features.Ghost and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(255, 255, 255)
+    ToggleGhost(Features.Ghost)
+end)
+
+CreateBtn("Fly (Noclip): OFF", function(b)
+    Features.Fly = not Features.Fly
+    b.Text = Features.Fly and "Fly: ON" or "Fly: OFF"
+    b.TextColor3 = Features.Fly and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(255, 255, 255)
+    if not Features.Fly then
         for _, v in pairs(Player.Character:GetDescendants()) do
             if v:IsA("BasePart") then v.CanCollide = true end
         end
     end
 end)
 
--- زر الحقوق زوكو
-local Dev = Instance.new("TextButton", MainFrame)
+-- زر الحقوق
+local Dev = Instance.new("TextLabel", MainFrame)
 Dev.Size = UDim2.new(1, 0, 0, 40)
 Dev.Position = UDim2.new(0, 0, 1, -40)
 Dev.BackgroundTransparency = 1
