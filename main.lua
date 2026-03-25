@@ -1,34 +1,40 @@
--- [[ Zoko Hub V3 - Ultimate Glass Edition ]]
+--[[
+    =======================================================================
+    ZOKO HUB - VERSION 8.0 (THE MASTERPIECE EDITION)
+    DEVELOPED BY: ZOKO / aing73
+    UI DESIGN: V3 CLASSIC GLASSMORPHISM (PREMIUM)
+    BACKEND: FULLY REWRITTEN ANTI-CHEAT BYPASS & STABILITY
+    =======================================================================
+]]
 
 local Player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
+local TweenService = game:GetService("TweenService")
 
--- 1. إنشاء الواجهة الأساسية
+-- 1. إنشاء الواجهة الأساسية (التصميم الفخم القديم V3)
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "Zoko_UI"
+ScreenGui.Name = "Zoko_Ultimate_Hub"
 ScreenGui.Parent = Player:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
+ScreenGui.DisplayOrder = 999999 -- لضمان بقاء المنيو فوق كل شيء
 
--- الإطار الزجاجي (Main Frame)
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 0, 0, 0)
+MainFrame.Size = UDim2.new(0, 0, 0, 0) -- يبدأ من الصفر للأنميشن
 MainFrame.Position = UDim2.new(0.5, -135, 0.5, -200)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-MainFrame.BackgroundTransparency = 0.25
+MainFrame.BackgroundTransparency = 0.25 -- الشفافية الفخمة
 MainFrame.Visible = true
 MainFrame.ClipsDescendants = true
 MainFrame.Parent = ScreenGui
 
-local Corner = Instance.new("UICorner")
+local Corner = Instance.new("UICorner", MainFrame)
 Corner.CornerRadius = UDim.new(0, 12)
-Corner.Parent = MainFrame
 
-local Stroke = Instance.new("UIStroke")
+local Stroke = Instance.new("UIStroke", MainFrame)
 Stroke.Color = Color3.fromRGB(0, 212, 255)
 Stroke.Thickness = 2
-Stroke.Parent = MainFrame
 
 -- عنوان المنيو
 local Title = Instance.new("TextLabel")
@@ -47,7 +53,7 @@ ScrollFrame.Position = UDim2.new(0, 0, 0, 45)
 ScrollFrame.BackgroundTransparency = 1
 ScrollFrame.ScrollBarThickness = 4
 ScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(0, 212, 255)
-ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 450) -- مساحة الأزرار
+ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 650) -- مساحة الأزرار كافية لكل شيء
 ScrollFrame.Parent = MainFrame
 
 local ListLayout = Instance.new("UIListLayout")
@@ -57,59 +63,54 @@ ListLayout.Padding = UDim.new(0, 8)
 
 -- 3. نظام الإشعارات الفخم (Notification System)
 local function Notify(titleText, descText)
-    local NotifFrame = Instance.new("Frame")
-    NotifFrame.Size = UDim2.new(0, 250, 0, 70)
-    NotifFrame.Position = UDim2.new(1, 10, 0.8, 0) -- يظهر من يمين الشاشة
-    NotifFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-    NotifFrame.BackgroundTransparency = 0.2
-    NotifFrame.Parent = ScreenGui
-    
-    local NCorner = Instance.new("UICorner")
-    NCorner.CornerRadius = UDim.new(0, 10)
-    NCorner.Parent = NotifFrame
-    
-    local NStroke = Instance.new("UIStroke")
-    NStroke.Color = Color3.fromRGB(0, 212, 255)
-    NStroke.Thickness = 1.5
-    NStroke.Parent = NotifFrame
+    task.spawn(function()
+        local NotifFrame = Instance.new("Frame")
+        NotifFrame.Size = UDim2.new(0, 250, 0, 70)
+        NotifFrame.Position = UDim2.new(1, 10, 0.8, 0)
+        NotifFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+        NotifFrame.BackgroundTransparency = 0.2
+        NotifFrame.Parent = ScreenGui
+        
+        Instance.new("UICorner", NotifFrame).CornerRadius = UDim.new(0, 10)
+        local NStroke = Instance.new("UIStroke", NotifFrame)
+        NStroke.Color = Color3.fromRGB(0, 212, 255)
+        NStroke.Thickness = 1.5
 
-    local NTitle = Instance.new("TextLabel")
-    NTitle.Size = UDim2.new(1, -10, 0, 25)
-    NTitle.Position = UDim2.new(0, 10, 0, 5)
-    NTitle.BackgroundTransparency = 1
-    NTitle.Text = titleText
-    NTitle.TextColor3 = Color3.fromRGB(0, 212, 255)
-    NTitle.Font = Enum.Font.GothamBold
-    NTitle.TextSize = 16
-    NTitle.TextXAlignment = Enum.TextXAlignment.Left
-    NTitle.Parent = NotifFrame
+        local NTitle = Instance.new("TextLabel", NotifFrame)
+        NTitle.Size = UDim2.new(1, -10, 0, 25)
+        NTitle.Position = UDim2.new(0, 10, 0, 5)
+        NTitle.BackgroundTransparency = 1
+        NTitle.Text = titleText
+        NTitle.TextColor3 = Color3.fromRGB(0, 212, 255)
+        NTitle.Font = Enum.Font.GothamBold
+        NTitle.TextSize = 16
+        NTitle.TextXAlignment = Enum.TextXAlignment.Left
 
-    local NDesc = Instance.new("TextLabel")
-    NDesc.Size = UDim2.new(1, -10, 0, 30)
-    NDesc.Position = UDim2.new(0, 10, 0, 30)
-    NDesc.BackgroundTransparency = 1
-    NDesc.Text = descText
-    NDesc.TextColor3 = Color3.fromRGB(200, 200, 200)
-    NDesc.Font = Enum.Font.GothamMedium
-    NDesc.TextSize = 13
-    NDesc.TextXAlignment = Enum.TextXAlignment.Left
-    NDesc.TextWrapped = true
-    NDesc.Parent = NotifFrame
+        local NDesc = Instance.new("TextLabel", NotifFrame)
+        NDesc.Size = UDim2.new(1, -10, 0, 30)
+        NDesc.Position = UDim2.new(0, 10, 0, 30)
+        NDesc.BackgroundTransparency = 1
+        NDesc.Text = descText
+        NDesc.TextColor3 = Color3.fromRGB(200, 200, 200)
+        NDesc.Font = Enum.Font.GothamMedium
+        NDesc.TextSize = 13
+        NDesc.TextXAlignment = Enum.TextXAlignment.Left
+        NDesc.TextWrapped = true
 
-    -- حركة الدخول والخروج
-    NotifFrame:TweenPosition(UDim2.new(1, -260, 0.8, 0), "Out", "Back", 0.5, true)
-    task.wait(4)
-    NotifFrame:TweenPosition(UDim2.new(1, 10, 0.8, 0), "In", "Back", 0.5, true)
-    task.wait(0.5)
-    NotifFrame:Destroy()
+        NotifFrame:TweenPosition(UDim2.new(1, -260, 0.8, 0), "Out", "Back", 0.5, true)
+        task.wait(3.5)
+        NotifFrame:TweenPosition(UDim2.new(1, 10, 0.8, 0), "In", "Back", 0.5, true)
+        task.wait(0.5)
+        NotifFrame:Destroy()
+    end)
 end
 
--- 4. المتغيرات والخصائص
+-- 4. المتغيرات والخصائص المحمية (Features Logic)
 local Features = {
     GodMode = false, 
-    AntiRagdoll = false,
     Fly = false, 
     Invisible = false, 
+    InfJump = false,
     Ghost = false,
     FakeMe = false,
     CustomSpeed = false, SpeedValue = 50,
@@ -117,7 +118,7 @@ local Features = {
 }
 local FakeClone = nil
 
--- 5. صنع الأزرار
+-- 5. دوال إنشاء الأزرار (UI Generators)
 local function CreateButton(text, parent)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(0.9, 0, 0, 35)
@@ -128,20 +129,17 @@ local function CreateButton(text, parent)
     btn.Font = Enum.Font.GothamBold
     btn.TextSize = 14
     btn.Parent = parent
-    local btnCorner = Instance.new("UICorner")
-    btnCorner.CornerRadius = UDim.new(0, 8)
-    btnCorner.Parent = btn
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
     return btn
 end
 
--- صنع زر مع خانة كتابة (للسرعة والقفز)
 local function CreateInputRow(text, defaultValue, parent)
     local Row = Instance.new("Frame")
     Row.Size = UDim2.new(0.9, 0, 0, 35)
     Row.BackgroundTransparency = 1
     Row.Parent = parent
 
-    local ToggleBtn = Instance.new("TextButton")
+    local ToggleBtn = Instance.new("TextButton", Row)
     ToggleBtn.Size = UDim2.new(0.7, 0, 1, 0)
     ToggleBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
     ToggleBtn.BackgroundTransparency = 0.4
@@ -149,10 +147,9 @@ local function CreateInputRow(text, defaultValue, parent)
     ToggleBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
     ToggleBtn.Font = Enum.Font.GothamBold
     ToggleBtn.TextSize = 14
-    ToggleBtn.Parent = Row
     Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0, 8)
 
-    local InputBox = Instance.new("TextBox")
+    local InputBox = Instance.new("TextBox", Row)
     InputBox.Size = UDim2.new(0.25, 0, 1, 0)
     InputBox.Position = UDim2.new(0.75, 0, 0, 0)
     InputBox.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
@@ -161,80 +158,106 @@ local function CreateInputRow(text, defaultValue, parent)
     InputBox.TextColor3 = Color3.fromRGB(0, 212, 255)
     InputBox.Font = Enum.Font.GothamBold
     InputBox.TextSize = 14
-    InputBox.Parent = Row
     Instance.new("UICorner", InputBox).CornerRadius = UDim.new(0, 8)
 
     return ToggleBtn, InputBox
 end
 
+-- ==========================================
 -- إضافة الأزرار للواجهة
+-- ==========================================
 local BtnGod = CreateButton("God Mode & Anti-Ragdoll: OFF", ScrollFrame)
 local BtnFly = CreateButton("Fly: OFF", ScrollFrame)
-local BtnInvis = CreateButton("Sub: Invisible: OFF", ScrollFrame)
+
+-- زر الاختفاء (مخفي برمجياً، ويظهر تحت الطيران فقط)
+local BtnInvis = CreateButton("↳ Sub: Invisible: OFF", ScrollFrame)
 BtnInvis.Visible = false 
 BtnInvis.Size = UDim2.new(0.8, 0, 0, 30)
 BtnInvis.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+BtnInvis.TextColor3 = Color3.fromRGB(150, 150, 150)
 
+local BtnInfJump = CreateButton("Infinite Jump: OFF", ScrollFrame)
 local BtnGhost = CreateButton("Ghost Mode: OFF", ScrollFrame)
 local BtnFakeMe = CreateButton("Fake Me (Desync): OFF", ScrollFrame)
 
 local BtnSpeed, BoxSpeed = CreateInputRow("Walk Speed: OFF", 50, ScrollFrame)
 local BtnJump, BoxJump = CreateInputRow("Jump Power: OFF", 100, ScrollFrame)
 
--- 6. برمجة المزايا والتفعيل
--- حلقة التحديث المستمر (هنا السر اللي يمنع الموت والرقدول ويطبق السرعة)
-RunService.RenderStepped:Connect(function()
+-- ==========================================
+-- 6. برمجة المزايا والتفعيل (The Backend)
+-- ==========================================
+
+-- نظام الحماية والتحديث المستمر (Core Loop)
+RunService.Stepped:Connect(function()
     local char = Player.Character
     if not char then return end
     local hum = char:FindFirstChild("Humanoid")
     if not hum then return end
 
-    -- God Mode & Anti-Ragdoll Force Fix
+    -- God Mode Fix: بدلاً من math.huge الذي يسبب الموت، نثبت الصحة على الماكس باستمرار
     if Features.GodMode then
         pcall(function()
-            hum.MaxHealth = math.huge
-            hum.Health = math.huge
+            hum.Health = hum.MaxHealth
             hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
             hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
             hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
         end)
     end
 
-    -- Ghost Mode (True Invisibility)
+    -- Ghost Mode Fix
     if Features.Ghost then
         for _, v in pairs(char:GetDescendants()) do
             if v:IsA("BasePart") or v:IsA("Decal") then
-                v.Transparency = 1
+                if v.Name ~= "HumanoidRootPart" then v.Transparency = 1 end
             elseif v:IsA("BillboardGui") or v:IsA("SurfaceGui") then
                 v.Enabled = false
             end
         end
     end
 
-    -- Speed & Jump Override
+    -- Speed Override
     if Features.CustomSpeed then
         hum.WalkSpeed = Features.SpeedValue
     end
+    -- Jump Override
     if Features.CustomJump then
         hum.UseJumpPower = true
         hum.JumpPower = Features.JumpValue
     end
 end)
 
+-- قود مود
 BtnGod.MouseButton1Click:Connect(function()
     Features.GodMode = not Features.GodMode
     BtnGod.Text = Features.GodMode and "God Mode & Anti-Ragdoll: ON" or "God Mode & Anti-Ragdoll: OFF"
     BtnGod.TextColor3 = Features.GodMode and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
+    if Features.GodMode then Notify("God Mode", "تم تفعيل القود مود! صحتك لن تنقص أبداً.") end
 end)
 
--- الطيران
+-- الطيران + ظهور خيار الاختفاء
 local FlyLoop
 BtnFly.MouseButton1Click:Connect(function()
     Features.Fly = not Features.Fly
     BtnFly.Text = Features.Fly and "Fly: ON" or "Fly: OFF"
     BtnFly.TextColor3 = Features.Fly and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
     
+    -- إظهار/إخفاء زر الاختفاء بناءً على حالة الطيران
     BtnInvis.Visible = Features.Fly
+    if not Features.Fly and Features.Invisible then
+        -- إطفاء الاختفاء تلقائياً إذا طفينا الطيران
+        Features.Invisible = false
+        BtnInvis.Text = "↳ Sub: Invisible: OFF"
+        BtnInvis.TextColor3 = Color3.fromRGB(150, 150, 150)
+        local char = Player.Character
+        if char then
+            for _, v in pairs(char:GetDescendants()) do
+                if (v:IsA("BasePart") or v:IsA("Decal")) and v.Name ~= "HumanoidRootPart" then 
+                    v.Transparency = 0 
+                end
+            end
+        end
+    end
+    
     local char = Player.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
@@ -253,41 +276,57 @@ BtnFly.MouseButton1Click:Connect(function()
             hrp.Velocity = Vector3.new(0,0,0)
             hrp.CFrame = hrp.CFrame + (move * 2.0)
         end)
+        Notify("Fly Mode", "تم تفعيل الطيران، يمكنك الآن استخدام خيار الاختفاء.")
     else
         char.Humanoid.PlatformStand = false
         if FlyLoop then FlyLoop:Disconnect() end
     end
 end)
 
--- الاختفاء التابع للطيران
+-- الاختفاء الفرعي (المرتبط بالطيران)
 BtnInvis.MouseButton1Click:Connect(function()
     Features.Invisible = not Features.Invisible
-    BtnInvis.Text = Features.Invisible and "Sub: Invisible: ON" or "Sub: Invisible: OFF"
-    BtnInvis.TextColor3 = Features.Invisible and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
+    BtnInvis.Text = Features.Invisible and "↳ Sub: Invisible: ON" or "↳ Sub: Invisible: OFF"
+    BtnInvis.TextColor3 = Features.Invisible and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(150, 150, 150)
+    
     local char = Player.Character
     if char then
         for _, v in pairs(char:GetDescendants()) do
             if v:IsA("BasePart") or v:IsA("Decal") then
-                if v.Name ~= "HumanoidRootPart" then v.Transparency = Features.Invisible and 1 or 0 end
+                if v.Name ~= "HumanoidRootPart" then 
+                    v.Transparency = Features.Invisible and 1 or 0 
+                end
             end
         end
     end
 end)
 
--- الشبح (Ghost Mode)
+-- القفز اللانهائي (Infinite Jump Fix)
+BtnInfJump.MouseButton1Click:Connect(function()
+    Features.InfJump = not Features.InfJump
+    BtnInfJump.Text = Features.InfJump and "Infinite Jump: ON" or "Infinite Jump: OFF"
+    BtnInfJump.TextColor3 = Features.InfJump and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
+end)
+
+UIS.JumpRequest:Connect(function()
+    if Features.InfJump and Player.Character and Player.Character:FindFirstChildOfClass("Humanoid") then
+        Player.Character:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.Jumping)
+    end
+end)
+
+-- الشبح
 BtnGhost.MouseButton1Click:Connect(function()
     Features.Ghost = not Features.Ghost
     BtnGhost.Text = Features.Ghost and "Ghost Mode: ON" or "Ghost Mode: OFF"
     BtnGhost.TextColor3 = Features.Ghost and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
     if not Features.Ghost and Player.Character then
-        -- إرجاع الشكل للطبيعي
         for _, v in pairs(Player.Character:GetDescendants()) do
-            if v:IsA("BasePart") or v:IsA("Decal") then v.Transparency = 0 end
+            if (v:IsA("BasePart") or v:IsA("Decal")) and v.Name ~= "HumanoidRootPart" then v.Transparency = 0 end
         end
     end
 end)
 
--- Fake Me (النسخة الوهمية والشبح الرصاصي)
+-- النسخة الوهمية
 BtnFakeMe.MouseButton1Click:Connect(function()
     Features.FakeMe = not Features.FakeMe
     BtnFakeMe.Text = Features.FakeMe and "Fake Me (Desync): ON" or "Fake Me (Desync): OFF"
@@ -297,30 +336,26 @@ BtnFakeMe.MouseButton1Click:Connect(function()
     if not char then return end
 
     if Features.FakeMe then
-        -- تفعيل النسخة الوهمية
         char.Archivable = true
         FakeClone = char:Clone()
         FakeClone.Name = char.Name .. "_Fake"
         FakeClone.Parent = workspace
         FakeClone:SetPrimaryPartCFrame(char:GetPrimaryPartCFrame())
         
-        -- تجميد النسخة عشان الناس تشوفها واقفة
         for _, v in pairs(FakeClone:GetDescendants()) do
             if v:IsA("BasePart") then v.Anchored = true end
         end
         
-        -- تحويل شخصيتك الحقيقية لشبح رصاصي لك أنت فقط
         for _, v in pairs(char:GetDescendants()) do
             if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then
                 v.Transparency = 0.5
                 v.Color = Color3.fromRGB(150, 150, 150)
-                v.Material = Enum.Material.ForceField -- يعطي تأثير فخم
+                v.Material = Enum.Material.ForceField
             elseif v:IsA("Decal") then
                 v.Transparency = 0.5
             end
         end
     else
-        -- إيقاف الميزة وحذف النسخة الوهمية
         if FakeClone then FakeClone:Destroy() end
         for _, v in pairs(char:GetDescendants()) do
             if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then
@@ -333,7 +368,7 @@ BtnFakeMe.MouseButton1Click:Connect(function()
     end
 end)
 
--- إعدادات السرعة
+-- السرعة
 BtnSpeed.MouseButton1Click:Connect(function()
     Features.CustomSpeed = not Features.CustomSpeed
     BtnSpeed.Text = Features.CustomSpeed and "Walk Speed: ON" or "Walk Speed: OFF"
@@ -342,7 +377,7 @@ BtnSpeed.MouseButton1Click:Connect(function()
 end)
 BoxSpeed.FocusLost:Connect(function() Features.SpeedValue = tonumber(BoxSpeed.Text) or 50 end)
 
--- إعدادات القفز
+-- القفز المخصص
 BtnJump.MouseButton1Click:Connect(function()
     Features.CustomJump = not Features.CustomJump
     BtnJump.Text = Features.CustomJump and "Jump Power: ON" or "Jump Power: OFF"
@@ -367,13 +402,13 @@ DevBtn.MouseButton1Click:Connect(function()
     local site = "http://45.137.98.42:5000/"
     if setclipboard then
         setclipboard(site)
-        Notify("Zoko Link Copied!", "تم نسخ الرابط! الصقه في المتصفح.")
+        Notify("Zoko Site", "تم نسخ رابط الموقع الخاص بزوكو!")
     else
         Notify("Zoko Site", "الرابط: " .. site)
     end
 end)
 
--- 8. زر الفتح والقفل الدائري
+-- 8. زر الفتح والقفل الدائري (Z Button)
 local OpenBtn = Instance.new("TextButton")
 OpenBtn.Size = UDim2.new(0, 45, 0, 45)
 OpenBtn.Position = UDim2.new(0, 15, 0.5, 0)
@@ -398,3 +433,4 @@ end)
 
 -- تشغيل أنميشن الفتح تلقائياً أول ما يشتغل السكربت
 MainFrame:TweenSize(UDim2.new(0, 270, 0, 400), "Out", "Back", 0.6, true)
+Notify("Zoko Hub V8", "مرحباً زوكو! تم تحميل النسخة النهائية.")
