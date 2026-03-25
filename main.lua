@@ -1,4 +1,4 @@
--- [[ Zoko Hub V3 - Ultimate Glass Edition (Fixed Skins & Glow Restart) ]]
+-- [[ Zoko Hub V3 - Ultimate Glass Edition (Perfect Skins & Fly) ]]
 
 local Player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -160,17 +160,7 @@ local FileName = "ZokoHub_SavedSkins.json"
 
 local function SaveDataToFile()
     if writefile then
-        local data = {}
-        for name, desc in pairs(SavedSkins) do
-            data[name] = {
-                HatAccessory = desc.HatAccessory, HairAccessory = desc.HairAccessory, FaceAccessory = desc.FaceAccessory,
-                NeckAccessory = desc.NeckAccessory, ShouldersAccessory = desc.ShouldersAccessory, FrontAccessory = desc.FrontAccessory,
-                BackAccessory = desc.BackAccessory, WaistAccessory = desc.WaistAccessory, Shirt = desc.Shirt, Pants = desc.Pants,
-                GraphicTShirt = desc.GraphicTShirt, Face = desc.Face, Head = desc.Head, Torso = desc.Torso,
-                LeftArm = desc.LeftArm, RightArm = desc.RightArm, LeftLeg = desc.LeftLeg, RightLeg = desc.RightLeg
-            }
-        end
-        pcall(function() writefile(FileName, HttpService:JSONEncode(data)) end)
+        pcall(function() writefile(FileName, HttpService:JSONEncode(SavedSkins)) end)
     end
 end
 
@@ -178,11 +168,7 @@ local function LoadDataFromFile()
     if readfile and isfile and isfile(FileName) then
         local s, result = pcall(function() return HttpService:JSONDecode(readfile(FileName)) end)
         if s and type(result) == "table" then
-            for name, props in pairs(result) do
-                local desc = Instance.new("HumanoidDescription")
-                for k, v in pairs(props) do pcall(function() desc[k] = v end) end
-                SavedSkins[name] = desc
-            end
+            SavedSkins = result
         end
     end
 end
@@ -274,19 +260,40 @@ local function RefreshSkinsUI()
         if child:IsA("TextButton") and child.LayoutOrder > 2 then child:Destroy() end
     end
     
-    for skinName, desc in pairs(SavedSkins) do
+    for skinName, skinProps in pairs(SavedSkins) do
         local btn = CreateBaseButton(skinName, SkinsScroll, 10)
-        
         local isApplying = false
+        
         -- كلك يسار = تطبيق السكن
         btn.MouseButton1Click:Connect(function()
             if isApplying then return end
             isApplying = true
             if Player.Character and Player.Character:FindFirstChild("Humanoid") then
-                pcall(function()
-                    Player.Character.Humanoid:ApplyDescription(desc)
-                    Notify("Zoko Skins", "تم تطبيق الطقم: " .. skinName, Color3.fromRGB(0, 255, 127))
+                -- إنشاء نسخة جديدة من الطقم عشان ما يخرب لو مت
+                local newDesc = Instance.new("HumanoidDescription")
+                for k, v in pairs(skinProps) do 
+                    pcall(function() newDesc[k] = v end) 
+                end
+                
+                local success = pcall(function()
+                    Player.Character.Humanoid:ApplyDescription(newDesc)
                 end)
+                
+                -- لو السيرفر منع التركيب التلقائي، نركب اللبس الأساسي يدوياً (Fallback)
+                if not success then
+                    pcall(function()
+                        local char = Player.Character
+                        local shirt = char:FindFirstChildOfClass("Shirt") or Instance.new("Shirt", char)
+                        if skinProps.Shirt ~= 0 then shirt.ShirtTemplate = "rbxassetid://" .. skinProps.Shirt end
+                        
+                        local pants = char:FindFirstChildOfClass("Pants") or Instance.new("Pants", char)
+                        if skinProps.Pants ~= 0 then pants.PantsTemplate = "rbxassetid://" .. skinProps.Pants end
+                        
+                        local face = char:FindFirstChild("Head") and char.Head:FindFirstChildOfClass("Decal")
+                        if face and skinProps.Face ~= 0 then face.Texture = "rbxassetid://" .. skinProps.Face end
+                    end)
+                end
+                Notify("Zoko Skins", "تم تطبيق الطقم: " .. skinName, Color3.fromRGB(0, 255, 127))
             end
             task.wait(0.5)
             isApplying = false
@@ -299,7 +306,7 @@ local function RefreshSkinsUI()
         end)
     end
 end
-RefreshSkinsUI() -- تحديث القائمة عند التشغيل
+RefreshSkinsUI()
 
 BtnAddOutfit.MouseButton1Click:Connect(function() ModalAdd.Visible = true OutfitNameInput.Text = "" end)
 BtnCancelOutfit.MouseButton1Click:Connect(function() ModalAdd.Visible = false end)
@@ -308,8 +315,18 @@ BtnSaveOutfit.MouseButton1Click:Connect(function()
     local name = OutfitNameInput.Text
     if name ~= "" and Player.Character and Player.Character:FindFirstChild("Humanoid") then
         local currentDesc = Player.Character.Humanoid:GetAppliedDescription()
-        SavedSkins[name] = currentDesc
-        SaveDataToFile() -- حفظ في الملف
+        
+        -- نحفظ الخصائص كأرقام ونصوص عشان ما تتلف بالمستقبل
+        local data = {
+            HatAccessory = currentDesc.HatAccessory, HairAccessory = currentDesc.HairAccessory, FaceAccessory = currentDesc.FaceAccessory,
+            NeckAccessory = currentDesc.NeckAccessory, ShouldersAccessory = currentDesc.ShouldersAccessory, FrontAccessory = currentDesc.FrontAccessory,
+            BackAccessory = currentDesc.BackAccessory, WaistAccessory = currentDesc.WaistAccessory, Shirt = currentDesc.Shirt, Pants = currentDesc.Pants,
+            GraphicTShirt = currentDesc.GraphicTShirt, Face = currentDesc.Face, Head = currentDesc.Head, Torso = currentDesc.Torso,
+            LeftArm = currentDesc.LeftArm, RightArm = currentDesc.RightArm, LeftLeg = currentDesc.LeftLeg, RightLeg = currentDesc.RightLeg
+        }
+        
+        SavedSkins[name] = data
+        SaveDataToFile()
         RefreshSkinsUI()
         ModalAdd.Visible = false
         Notify("Zoko Skins", "تم حفظ الطقم بنجاح!", Color3.fromRGB(0, 255, 127))
@@ -318,7 +335,7 @@ end)
 
 BtnConfirmDel.MouseButton1Click:Connect(function()
     SavedSkins[SkinToDelete] = nil
-    SaveDataToFile() -- تحديث الملف بعد الحذف
+    SaveDataToFile()
     RefreshSkinsUI()
     ModalDel.Visible = false
     Notify("Zoko Skins", "تم حذف الطقم!", Color3.fromRGB(255, 50, 50))
@@ -399,7 +416,7 @@ local BtnFakeMe = CreateButton("Fake Me (Desync): OFF", ScrollFrame)
 local BtnSpeed, BoxSpeed = CreateInputRow("Walk Speed: OFF", 50, ScrollFrame)
 local BtnJump, BoxJump = CreateInputRow("Jump Power: OFF", 100, ScrollFrame)
 
--- منيو السكنات (تم نقله للأسفل)
+-- منيو السكنات
 local BtnSkinsMenu = CreateButton("منيو السكنات", ScrollFrame)
 BtnSkinsMenu.TextColor3 = Color3.fromRGB(0, 212, 255)
 BtnSkinsMenu.MouseButton1Click:Connect(function()
@@ -423,13 +440,12 @@ local RenderLoop = RunService.RenderStepped:Connect(function()
         end)
     end
 
-    -- تقوية الاختفاء الوهمي عند اللاعبين
     if Features.Ghost then
         for _, v in pairs(char:GetDescendants()) do
             if v:IsA("BasePart") or v:IsA("Decal") then
                 if v.Name ~= "HumanoidRootPart" then 
                     v.Transparency = 1 
-                    v.LocalTransparencyModifier = 1 -- أقوى للسيرفرات
+                    v.LocalTransparencyModifier = 1
                 end
             elseif v:IsA("BillboardGui") or v:IsA("SurfaceGui") then
                 v.Enabled = false
@@ -447,7 +463,7 @@ BtnGod.MouseButton1Click:Connect(function()
     BtnGod.TextColor3 = Features.GodMode and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
 end)
 
--- الطيران
+-- الطيران (مع تعديل الـ Shift والـ Q والـ Z)
 local FlyLoop
 BtnFly.MouseButton1Click:Connect(function()
     Features.Fly = not Features.Fly
@@ -479,14 +495,20 @@ BtnFly.MouseButton1Click:Connect(function()
         FlyLoop = RunService.RenderStepped:Connect(function()
             local cam = workspace.CurrentCamera
             local move = Vector3.new(0,0,0)
+            local speed = 2.0 -- السرعة العادية
+            
+            -- زيادة السرعة بالضغط على Shift
+            if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then speed = 5.0 end
+            
             if UIS:IsKeyDown(Enum.KeyCode.W) then move = move + cam.CFrame.LookVector end
             if UIS:IsKeyDown(Enum.KeyCode.S) then move = move - cam.CFrame.LookVector end
             if UIS:IsKeyDown(Enum.KeyCode.D) then move = move + cam.CFrame.RightVector end
             if UIS:IsKeyDown(Enum.KeyCode.A) then move = move - cam.CFrame.RightVector end
-            if UIS:IsKeyDown(Enum.KeyCode.Space) then move = move + Vector3.new(0,1,0) end
-            if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then move = move - Vector3.new(0,1,0) end
+            if UIS:IsKeyDown(Enum.KeyCode.Space) or UIS:IsKeyDown(Enum.KeyCode.Q) then move = move + Vector3.new(0,1,0) end -- Q يرفعك
+            if UIS:IsKeyDown(Enum.KeyCode.Z) then move = move - Vector3.new(0,1,0) end -- Z ينزلك
+            
             hrp.Velocity = Vector3.new(0,0,0)
-            hrp.CFrame = hrp.CFrame + (move * 2.0)
+            hrp.CFrame = hrp.CFrame + (move * speed)
         end)
     else
         char.Humanoid.PlatformStand = false
@@ -612,18 +634,18 @@ DevBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- زر الريستارت الجديد (RESTART) بتصميم Glow سماوي
+-- زر الريستارت الجديد (RESTART) بتصميم مطابق لخط Zoko
 local RestartBtn = Instance.new("TextButton")
 RestartBtn.Size = UDim2.new(1, 0, 0, 15)
 RestartBtn.Position = UDim2.new(0, 0, 1, -20)
 RestartBtn.BackgroundTransparency = 1
-RestartBtn.Text = "RESTART"
-RestartBtn.TextColor3 = Color3.fromRGB(0, 212, 255) -- نفس لون اسمك
+RestartBtn.RichText = true
+RestartBtn.Text = "<b>RESTART</b>"
+RestartBtn.TextColor3 = Color3.fromRGB(0, 212, 255)
 RestartBtn.Font = Enum.Font.GothamBlack
-RestartBtn.TextSize = 11
+RestartBtn.TextSize = 13
 RestartBtn.Parent = MainFrame
 
--- تأثير الـ Neon (Glow) للريستارت
 local RestartGlow = Instance.new("UIStroke")
 RestartGlow.Color = Color3.fromRGB(0, 212, 255)
 RestartGlow.Transparency = 0.5
@@ -631,13 +653,11 @@ RestartGlow.Thickness = 0.6
 RestartGlow.Parent = RestartBtn
 
 RestartBtn.MouseButton1Click:Connect(function()
-    -- إيقاف اللوبات لتنظيف الذاكرة
     if RenderLoop then RenderLoop:Disconnect() end
     if FlyLoop then FlyLoop:Disconnect() end
     if JumpLoop then JumpLoop:Disconnect() end
     ScreenGui:Destroy()
     
-    -- تحميل السكربت مجدداً من ملفك
     pcall(function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/Ray2133231/Zoko2/main/main.lua"))()
     end)
