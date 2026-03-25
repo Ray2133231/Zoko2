@@ -1,4 +1,4 @@
--- [[ Zoko Hub V4 - Ultimate Glass Edition (Perfect Native Clone & Fly) ]]
+-- [[ Zoko Hub V5 - Ultimate Glass Edition (Absolute Raw Clone & Forced Invis) ]]
 
 local Player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -6,17 +6,15 @@ local UIS = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
 local HttpService = game:GetService("HttpService")
 
--- حذف الواجهة القديمة للريستارت
+-- حذف الواجهة القديمة
 if _G.ZokoUI then pcall(function() _G.ZokoUI:Destroy() end) end
 
--- 1. إنشاء الواجهة الأساسية
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "Zoko_UI"
 ScreenGui.Parent = Player:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 _G.ZokoUI = ScreenGui
 
--- الإطار الزجاجي (Main Frame)
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 0, 0, 0)
 MainFrame.Position = UDim2.new(0.5, -135, 0.5, -200)
@@ -26,28 +24,20 @@ MainFrame.Visible = true
 MainFrame.ClipsDescendants = true
 MainFrame.Parent = ScreenGui
 
-local Corner = Instance.new("UICorner")
-Corner.CornerRadius = UDim.new(0, 12)
-Corner.Parent = MainFrame
-
-local Stroke = Instance.new("UIStroke")
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
+local Stroke = Instance.new("UIStroke", MainFrame)
 Stroke.Color = Color3.fromRGB(0, 212, 255)
 Stroke.Thickness = 2
-Stroke.Parent = MainFrame
 
--- عنوان المنيو
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.BackgroundTransparency = 1
-Title.Text = "ZOKO HUB"
+Title.Text = "ZOKO HUB V5"
 Title.TextColor3 = Color3.fromRGB(0, 212, 255)
 Title.Font = Enum.Font.GothamBlack
 Title.TextSize = 22
 Title.Parent = MainFrame
 
--- ==========================================
--- نظام السحب والتحريك
--- ==========================================
 local function MakeDraggable(gui)
     local dragging, dragInput, dragStart, startPos
     gui.InputBegan:Connect(function(input)
@@ -74,9 +64,6 @@ local function MakeDraggable(gui)
 end
 MakeDraggable(MainFrame)
 
--- ==========================================
--- 2. إعداد القوائم
--- ==========================================
 local ScrollFrame = Instance.new("ScrollingFrame")
 ScrollFrame.Size = UDim2.new(1, 0, 1, -110)
 ScrollFrame.Position = UDim2.new(0, 0, 0, 45)
@@ -105,9 +92,7 @@ local SkinsLayout = Instance.new("UIListLayout")
 SkinsLayout.Parent = SkinsScroll
 SkinsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 SkinsLayout.Padding = UDim.new(0, 8)
-SkinsLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
--- 3. الإشعارات
 local function Notify(titleText, descText, color)
     local useColor = color or Color3.fromRGB(0, 212, 255)
     local NotifFrame = Instance.new("Frame")
@@ -116,7 +101,6 @@ local function Notify(titleText, descText, color)
     NotifFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
     NotifFrame.BackgroundTransparency = 0.2
     NotifFrame.Parent = ScreenGui
-    
     Instance.new("UICorner", NotifFrame).CornerRadius = UDim.new(0, 10)
     local NStroke = Instance.new("UIStroke", NotifFrame)
     NStroke.Color = useColor
@@ -151,36 +135,19 @@ local function Notify(titleText, descText, color)
 end
 
 -- ==========================================
--- نظام حفظ الأطقم الأصلي والعميق (Native Cloning)
+-- نظام النسخ الفيزيائي الخام V5 (Raw Physical Clone)
 -- ==========================================
 local SavedSkins = {}
 local SkinToDelete = ""
--- تم تغيير اسم الملف إلى V4 لتنظيف الأطقم المكسورة السابقة
-local FileName = "ZokoHub_V4_Skins.json"
-
--- الخصائص اللي بينسخها النظام (كل شي حرفياً)
-local DescProps = {
-    "HatAccessory", "HairAccessory", "FaceAccessory", "NeckAccessory", "ShouldersAccessory", "FrontAccessory", "BackAccessory", "WaistAccessory",
-    "Shirt", "Pants", "GraphicTShirt", "Face", "Head", "Torso", "LeftArm", "RightArm", "LeftLeg", "RightLeg",
-    "DepthScale", "HeadScale", "HeightScale", "ProportionScale", "WidthScale", "BodyTypeScale",
-    "ClimbAnimation", "FallAnimation", "IdleAnimation", "JumpAnimation", "RunAnimation", "SwimAnimation", "WalkAnimation"
-}
-local ColorProps = {
-    "HeadColor", "LeftArmColor", "LeftLegColor", "RightArmColor", "RightLegColor", "TorsoColor"
-}
+local FileName = "ZokoHub_V5_Skins.json"
 
 local function SaveDataToFile()
-    if writefile then
-        pcall(function() writefile(FileName, HttpService:JSONEncode(SavedSkins)) end)
-    end
+    if writefile then pcall(function() writefile(FileName, HttpService:JSONEncode(SavedSkins)) end) end
 end
-
 local function LoadDataFromFile()
     if readfile and isfile and isfile(FileName) then
         local s, result = pcall(function() return HttpService:JSONDecode(readfile(FileName)) end)
-        if s and type(result) == "table" then
-            SavedSkins = result
-        end
+        if s and type(result) == "table" then SavedSkins = result end
     end
 end
 LoadDataFromFile()
@@ -205,6 +172,7 @@ BtnBackToMenu.TextColor3 = Color3.fromRGB(255, 100, 100)
 local BtnAddOutfit = CreateBaseButton("اضافة طقم", SkinsScroll, 2)
 BtnAddOutfit.TextColor3 = Color3.fromRGB(0, 255, 127)
 
+-- النوافذ المنبثقة (Modals)
 local ModalAdd = Instance.new("Frame", MainFrame)
 ModalAdd.Size = UDim2.new(1, 0, 1, 0)
 ModalAdd.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
@@ -217,13 +185,13 @@ OutfitNameInput.Size = UDim2.new(0.8, 0, 0, 40)
 OutfitNameInput.Position = UDim2.new(0.1, 0, 0.3, 0)
 OutfitNameInput.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 OutfitNameInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-OutfitNameInput.PlaceholderText = "اكتب اسم الطقم هنا..."
+OutfitNameInput.PlaceholderText = "اسم الطقم..."
 OutfitNameInput.Font = Enum.Font.GothamBold
 OutfitNameInput.TextSize = 14
 OutfitNameInput.ZIndex = 11
 Instance.new("UICorner", OutfitNameInput)
 
-local BtnSaveOutfit = CreateBaseButton("حفظ الطقم", ModalAdd)
+local BtnSaveOutfit = CreateBaseButton("حفظ", ModalAdd)
 BtnSaveOutfit.Size = UDim2.new(0.35, 0, 0, 35)
 BtnSaveOutfit.Position = UDim2.new(0.1, 0, 0.5, 0)
 BtnSaveOutfit.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
@@ -238,7 +206,6 @@ BtnCancelOutfit.ZIndex = 11
 local ModalDel = Instance.new("Frame", MainFrame)
 ModalDel.Size = UDim2.new(1, 0, 1, 0)
 ModalDel.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
-ModalDel.BackgroundTransparency = 0.1
 ModalDel.ZIndex = 10
 ModalDel.Visible = false
 
@@ -271,81 +238,81 @@ local function RefreshSkinsUI()
     
     for skinName, skinProps in pairs(SavedSkins) do
         local btn = CreateBaseButton(skinName, SkinsScroll, 10)
-        local isApplying = false
         
-        -- تطبيق الطقم
+        -- تطبيق الطقم بالقوة (Forced Apply)
         btn.MouseButton1Click:Connect(function()
-            if isApplying then return end
-            isApplying = true
             local char = Player.Character
             if char and char:FindFirstChild("Humanoid") then
                 
-                -- بناء الوصف الدقيق للطقم
-                pcall(function()
-                    local newDesc = Instance.new("HumanoidDescription")
-                    
-                    if skinProps.Props then
-                        for k, v in pairs(skinProps.Props) do
-                            pcall(function() newDesc[k] = v end)
-                        end
-                    end
-                    
-                    if skinProps.Colors then
-                        for k, v in pairs(skinProps.Colors) do
-                            pcall(function() newDesc[k] = Color3.fromHex(v) end)
-                        end
-                    end
-                    
-                    -- محرك روبلوكس الرسمي لتغيير الشخصية (ينسخ كل شي بأمان)
-                    char.Humanoid:ApplyDescription(newDesc)
-                end)
+                -- 1. تطبيق الملابس العادية (Shirt, Pants)
+                if skinProps.Clothes.Shirt then
+                    local s = char:FindFirstChildOfClass("Shirt") or Instance.new("Shirt", char)
+                    s.ShirtTemplate = skinProps.Clothes.Shirt
+                end
+                if skinProps.Clothes.Pants then
+                    local p = char:FindFirstChildOfClass("Pants") or Instance.new("Pants", char)
+                    p.PantsTemplate = skinProps.Clothes.Pants
+                end
+                if skinProps.Clothes.Graphic then
+                    local t = char:FindFirstChildOfClass("ShirtGraphic") or Instance.new("ShirtGraphic", char)
+                    t.Graphic = skinProps.Clothes.Graphic
+                end
                 
-                -- نظام احتياطي للملابس والوجه (فقط لضمان عدم بقاءك بدون ملابس)
-                task.wait(0.2)
-                pcall(function()
-                    local function getCleanId(val)
-                        local id = string.match(tostring(val), "%d+")
-                        if id and id ~= "0" then return "rbxassetid://" .. id end
-                        return nil
+                -- 2. إجبار الميشات والألوان لكل أجزاء الجسم (لنسخ الجسم بالضبط)
+                for partName, pData in pairs(skinProps.Parts) do
+                    local part = char:FindFirstChild(partName)
+                    if part then
+                        if part:IsA("MeshPart") then
+                            pcall(function() part.MeshId = pData.MeshId end)
+                            pcall(function() part.TextureID = pData.TextureID end)
+                        else
+                            local mesh = part:FindFirstChildOfClass("SpecialMesh") or Instance.new("SpecialMesh", part)
+                            pcall(function() mesh.MeshId = pData.MeshId end)
+                            pcall(function() mesh.TextureId = pData.TextureID end)
+                        end
+                        pcall(function() part.Color = Color3.fromHex(pData.Color) end)
+                        pcall(function() part.Size = Vector3.new(pData.SizeX, pData.SizeY, pData.SizeZ) end)
                     end
+                end
 
-                    if skinProps.Props.Shirt then
-                        local sId = getCleanId(skinProps.Props.Shirt)
-                        if sId then
-                            local shirt = char:FindFirstChildOfClass("Shirt") or Instance.new("Shirt", char)
-                            shirt.ShirtTemplate = sId
-                        end
+                -- 3. تطبيق الوجه
+                if skinProps.Face ~= "" then
+                    local head = char:FindFirstChild("Head")
+                    if head then
+                        local face = head:FindFirstChildOfClass("Decal") or Instance.new("Decal", head)
+                        face.Texture = skinProps.Face
                     end
-                    if skinProps.Props.Pants then
-                        local pId = getCleanId(skinProps.Props.Pants)
-                        if pId then
-                            local pants = char:FindFirstChildOfClass("Pants") or Instance.new("Pants", char)
-                            pants.PantsTemplate = pId
-                        end
+                end
+
+                -- 4. إجبار BodyColors
+                if skinProps.BodyColors then
+                    local bc = char:FindFirstChildOfClass("BodyColors") or Instance.new("BodyColors", char)
+                    pcall(function() bc.HeadColor3 = Color3.fromHex(skinProps.BodyColors.Head) end)
+                    pcall(function() bc.TorsoColor3 = Color3.fromHex(skinProps.BodyColors.Torso) end)
+                    pcall(function() bc.LeftArmColor3 = Color3.fromHex(skinProps.BodyColors.LeftArm) end)
+                    pcall(function() bc.RightArmColor3 = Color3.fromHex(skinProps.BodyColors.RightArm) end)
+                    pcall(function() bc.LeftLegColor3 = Color3.fromHex(skinProps.BodyColors.LeftLeg) end)
+                    pcall(function() bc.RightLegColor3 = Color3.fromHex(skinProps.BodyColors.RightLeg) end)
+                end
+
+                -- 5. إجبار المقاسات (طول، عرض، إلخ)
+                local hum = char:FindFirstChild("Humanoid")
+                for scaleName, val in pairs(skinProps.Scales) do
+                    local v = hum:FindFirstChild(scaleName)
+                    if v and v:IsA("NumberValue") then v.Value = val end
+                end
+
+                -- 6. تطبيق الإضافات عن طريق HumanoidDescription (للقبعات والشعر فقط كدعم إضافي)
+                pcall(function()
+                    local desc = hum:GetAppliedDescription()
+                    if skinProps.Desc then
+                        for k, v in pairs(skinProps.Desc) do pcall(function() desc[k] = v end) end
                     end
-                    if skinProps.Props.GraphicTShirt then
-                        local tId = getCleanId(skinProps.Props.GraphicTShirt)
-                        if tId then
-                            local tshirt = char:FindFirstChildOfClass("ShirtGraphic") or Instance.new("ShirtGraphic", char)
-                            tshirt.Graphic = tId
-                        end
-                    end
-                    if skinProps.Props.Face then
-                        local fId = getCleanId(skinProps.Props.Face)
-                        if fId then
-                            local head = char:FindFirstChild("Head")
-                            if head then
-                                local face = head:FindFirstChildOfClass("Decal") or Instance.new("Decal", head)
-                                face.Texture = fId
-                            end
-                        end
-                    end
+                    hum:ApplyDescription(desc)
                 end)
                 
-                Notify("Zoko Skins", "تم تطبيق الطقم: " .. skinName, Color3.fromRGB(0, 255, 127))
+                Notify("Zoko Skins", "تم تركيب الطقم بالكامل!", Color3.fromRGB(0, 255, 127))
             end
-            task.wait(0.5)
-            isApplying = false
         end)
         
         btn.MouseButton2Click:Connect(function()
@@ -359,27 +326,56 @@ RefreshSkinsUI()
 BtnAddOutfit.MouseButton1Click:Connect(function() ModalAdd.Visible = true OutfitNameInput.Text = "" end)
 BtnCancelOutfit.MouseButton1Click:Connect(function() ModalAdd.Visible = false end)
 
--- حفظ الطقم (يأخذ نسخة من كل تفاصيل المودل الأصلي)
+-- حفظ كل تفاصيل الجسم الخام
 BtnSaveOutfit.MouseButton1Click:Connect(function()
     local name = OutfitNameInput.Text
     local char = Player.Character
-    if name ~= "" and char and char:FindFirstChild("Humanoid") then
-        local currentDesc = char.Humanoid:GetAppliedDescription()
-        local data = { Props = {}, Colors = {} }
+    if name ~= "" and char then
+        local data = { Parts = {}, Clothes = {}, Scales = {}, Desc = {}, BodyColors = nil, Face = "" }
         
-        for _, prop in ipairs(DescProps) do
-            pcall(function() data.Props[prop] = currentDesc[prop] end)
+        -- 1. نسخ كل جزء من الجسم (السر هنا)
+        for _, v in pairs(char:GetChildren()) do
+            if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then
+                local mesh = v:FindFirstChildOfClass("SpecialMesh")
+                data.Parts[v.Name] = {
+                    Color = v.Color:ToHex(),
+                    SizeX = v.Size.X, SizeY = v.Size.Y, SizeZ = v.Size.Z,
+                    MeshId = v:IsA("MeshPart") and v.MeshId or (mesh and mesh.MeshId or ""),
+                    TextureID = v:IsA("MeshPart") and v.TextureID or (mesh and mesh.TextureId or "")
+                }
+            elseif v:IsA("Shirt") then data.Clothes.Shirt = v.ShirtTemplate
+            elseif v:IsA("Pants") then data.Clothes.Pants = v.PantsTemplate
+            elseif v:IsA("ShirtGraphic") then data.Clothes.Graphic = v.Graphic
+            elseif v:IsA("BodyColors") then
+                data.BodyColors = {
+                    Head = v.HeadColor3:ToHex(), Torso = v.TorsoColor3:ToHex(),
+                    LeftArm = v.LeftArmColor3:ToHex(), RightArm = v.RightArmColor3:ToHex(),
+                    LeftLeg = v.LeftLegColor3:ToHex(), RightLeg = v.RightLegColor3:ToHex()
+                }
+            end
         end
         
-        for _, prop in ipairs(ColorProps) do
-            pcall(function() data.Colors[prop] = currentDesc[prop]:ToHex() end)
+        local head = char:FindFirstChild("Head")
+        local face = head and head:FindFirstChildOfClass("Decal")
+        if face then data.Face = face.Texture end
+
+        local hum = char:FindFirstChild("Humanoid")
+        if hum then
+            for _, v in pairs(hum:GetChildren()) do
+                if v:IsA("NumberValue") then data.Scales[v.Name] = v.Value end
+            end
+            pcall(function()
+                local d = hum:GetAppliedDescription()
+                local props = {"HatAccessory", "HairAccessory", "FaceAccessory", "NeckAccessory", "ShouldersAccessory", "FrontAccessory", "BackAccessory", "WaistAccessory"}
+                for _, p in ipairs(props) do data.Desc[p] = d[p] end
+            end)
         end
         
         SavedSkins[name] = data
         SaveDataToFile()
         RefreshSkinsUI()
         ModalAdd.Visible = false
-        Notify("Zoko Skins", "تم حفظ الطقم العميق بنجاح!", Color3.fromRGB(0, 255, 127))
+        Notify("Zoko Skins", "تم حفظ الطقم ونسخ تفاصيل الجسم بدقة!", Color3.fromRGB(0, 255, 127))
     end
 end)
 
@@ -388,35 +384,20 @@ BtnConfirmDel.MouseButton1Click:Connect(function()
     SaveDataToFile()
     RefreshSkinsUI()
     ModalDel.Visible = false
-    Notify("Zoko Skins", "تم حذف الطقم!", Color3.fromRGB(255, 50, 50))
+    Notify("Zoko Skins", "تم الحذف!", Color3.fromRGB(255, 50, 50))
 end)
 BtnCancelDel.MouseButton1Click:Connect(function() ModalDel.Visible = false end)
 
-BtnBackToMenu.MouseButton1Click:Connect(function()
-    SkinsScroll.Visible = false
-    ScrollFrame.Visible = true
-end)
+BtnBackToMenu.MouseButton1Click:Connect(function() SkinsScroll.Visible = false ScrollFrame.Visible = true end)
 
--- 4. المتغيرات والأزرار الجانبية
+-- ==========================================
+-- الأزرار الرئيسية والميزات
+-- ==========================================
 local Features = {
     GodMode = false, Fly = false, Invisible = false, InfJump = false,
     Ghost = false, FakeMe = false, CustomSpeed = false, SpeedValue = 50, CustomJump = false, JumpValue = 100
 }
 local FakeClone = nil
-
-local function CreateButton(text, parent)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0.9, 0, 0, 35)
-    btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-    btn.BackgroundTransparency = 0.4
-    btn.Text = text
-    btn.TextColor3 = Color3.fromRGB(200, 200, 200)
-    btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 14
-    btn.Parent = parent
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
-    return btn
-end
 
 local function CreateInputRow(text, defaultValue, parent)
     local Row = Instance.new("Frame")
@@ -450,30 +431,43 @@ local function CreateInputRow(text, defaultValue, parent)
     return ToggleBtn, InputBox
 end
 
-local BtnGod = CreateButton("God Mode & Anti-Ragdoll: OFF", ScrollFrame)
-local BtnFly = CreateButton("Fly: OFF", ScrollFrame)
-local BtnInvis = CreateButton("Sub: Invisible: OFF", ScrollFrame)
+local BtnGod = CreateBaseButton("God Mode & Anti-Ragdoll: OFF", ScrollFrame)
+local BtnFly = CreateBaseButton("Fly: OFF", ScrollFrame)
+local BtnInvis = CreateBaseButton("Sub: Invisible: OFF", ScrollFrame)
 BtnInvis.Visible = false 
 BtnInvis.Size = UDim2.new(0.8, 0, 0, 30)
 BtnInvis.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 
-local BtnInfJump = CreateButton("Infinite Jump: OFF", ScrollFrame)
-local BtnGhost = CreateButton("Ghost Mode: OFF", ScrollFrame)
-local BtnFakeMe = CreateButton("Fake Me (Desync): OFF", ScrollFrame)
+local BtnInfJump = CreateBaseButton("Infinite Jump: OFF", ScrollFrame)
+local BtnGhost = CreateBaseButton("Ghost Mode: OFF", ScrollFrame)
+local BtnFakeMe = CreateBaseButton("Fake Me (Desync): OFF", ScrollFrame)
 
 local BtnSpeed, BoxSpeed = CreateInputRow("Walk Speed: OFF", 50, ScrollFrame)
 local BtnJump, BoxJump = CreateInputRow("Jump Power: OFF", 100, ScrollFrame)
 
-local BtnSkinsMenu = CreateButton("منيو السكنات", ScrollFrame)
+local BtnSkinsMenu = CreateBaseButton("منيو السكنات", ScrollFrame)
 BtnSkinsMenu.TextColor3 = Color3.fromRGB(0, 212, 255)
-BtnSkinsMenu.MouseButton1Click:Connect(function()
-    ScrollFrame.Visible = false
-    SkinsScroll.Visible = true
-end)
+BtnSkinsMenu.MouseButton1Click:Connect(function() ScrollFrame.Visible = false SkinsScroll.Visible = true end)
 
+-- نظام التحديث المستمر (هنا السر لحل مشكلة الاختفاء)
 local RenderLoop = RunService.RenderStepped:Connect(function()
     local char = Player.Character
     if not char then return end
+    
+    -- إجبار الاختفاء (حتى لو اللعبة حاولت ترجعك)
+    if Features.Invisible then
+        for _, v in pairs(char:GetDescendants()) do
+            if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then 
+                v.Transparency = 1 
+            elseif v:IsA("Decal") then
+                v.Transparency = 1
+            elseif v:IsA("Accessory") then
+                local handle = v:FindFirstChild("Handle")
+                if handle then handle.Transparency = 1 end
+            end
+        end
+    end
+
     local hum = char:FindFirstChild("Humanoid")
     if not hum then return end
 
@@ -488,14 +482,7 @@ local RenderLoop = RunService.RenderStepped:Connect(function()
 
     if Features.Ghost then
         for _, v in pairs(char:GetDescendants()) do
-            if v:IsA("BasePart") or v:IsA("Decal") then
-                if v.Name ~= "HumanoidRootPart" then 
-                    v.Transparency = 1 
-                    v.LocalTransparencyModifier = 1
-                end
-            elseif v:IsA("BillboardGui") or v:IsA("SurfaceGui") then
-                v.Enabled = false
-            end
+            if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then v.CanCollide = false end
         end
     end
 
@@ -524,9 +511,8 @@ BtnFly.MouseButton1Click:Connect(function()
         local char = Player.Character
         if char then
             for _, v in pairs(char:GetDescendants()) do
-                if v:IsA("BasePart") or v:IsA("Decal") then
-                    if v.Name ~= "HumanoidRootPart" then v.Transparency = 0 end
-                end
+                if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then v.Transparency = 0 
+                elseif v:IsA("Decal") then v.Transparency = 0 end
             end
         end
     end
@@ -564,12 +550,12 @@ BtnInvis.MouseButton1Click:Connect(function()
     Features.Invisible = not Features.Invisible
     BtnInvis.Text = Features.Invisible and "Sub: Invisible: ON" or "Sub: Invisible: OFF"
     BtnInvis.TextColor3 = Features.Invisible and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
-    local char = Player.Character
-    if char then
-        for _, v in pairs(char:GetDescendants()) do
-            if v:IsA("BasePart") or v:IsA("Decal") then
-                if v.Name ~= "HumanoidRootPart" then v.Transparency = Features.Invisible and 1 or 0 end
-            end
+    
+    -- الإرجاع لو طفاه
+    if not Features.Invisible and Player.Character then
+        for _, v in pairs(Player.Character:GetDescendants()) do
+            if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then v.Transparency = 0 
+            elseif v:IsA("Decal") then v.Transparency = 0 end
         end
     end
 end)
@@ -590,13 +576,6 @@ BtnGhost.MouseButton1Click:Connect(function()
     Features.Ghost = not Features.Ghost
     BtnGhost.Text = Features.Ghost and "Ghost Mode: ON" or "Ghost Mode: OFF"
     BtnGhost.TextColor3 = Features.Ghost and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
-    if not Features.Ghost and Player.Character then
-        for _, v in pairs(Player.Character:GetDescendants()) do
-            if v:IsA("BasePart") or v:IsA("Decal") then
-                if v.Name ~= "HumanoidRootPart" then v.Transparency = 0 end
-            end
-        end
-    end
 end)
 
 BtnFakeMe.MouseButton1Click:Connect(function()
@@ -667,16 +646,6 @@ DevBtn.Font = Enum.Font.GothamMedium
 DevBtn.TextSize = 14
 DevBtn.Parent = MainFrame
 
-DevBtn.MouseButton1Click:Connect(function()
-    local site = "http://45.137.98.42:5000/"
-    if setclipboard then
-        setclipboard(site)
-        Notify("Zoko Link Copied!", "تم نسخ الرابط!")
-    else
-        Notify("Zoko Site", "الرابط: " .. site)
-    end
-end)
-
 local RestartBtn = Instance.new("TextButton")
 RestartBtn.Size = UDim2.new(1, 0, 0, 20)
 RestartBtn.Position = UDim2.new(0, 0, 1, -22)
@@ -714,7 +683,6 @@ OpenBtn.TextSize = 22
 OpenBtn.TextColor3 = Color3.fromRGB(25, 25, 25)
 OpenBtn.Parent = ScreenGui
 Instance.new("UICorner", OpenBtn).CornerRadius = UDim.new(1, 0)
-
 MakeDraggable(OpenBtn)
 
 OpenBtn.MouseButton1Click:Connect(function()
