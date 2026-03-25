@@ -1,4 +1,4 @@
--- [[ Zoko Hub V3 - Ultimate Glass Edition (Perfect Outfits & Fly) ]]
+-- [[ Zoko Hub V3 - Ultimate Glass Edition (Perfect Clone Outfits & Fly) ]]
 
 local Player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -152,11 +152,22 @@ local function Notify(titleText, descText, color)
 end
 
 -- ==========================================
--- نظام حفظ الأطقم الدائم والأكيد (Anti-Naked System)
+-- نظام حفظ الأطقم بالاستنساخ الشامل (Copy Paste System)
 -- ==========================================
 local SavedSkins = {}
 local SkinToDelete = ""
 local FileName = "ZokoHub_SavedSkins.json"
+
+-- جميع الخصائص المطلوبة لنسخ الشخصية 100%
+local StandardProps = {
+    "HatAccessory", "HairAccessory", "FaceAccessory", "NeckAccessory", "ShouldersAccessory", "FrontAccessory", "BackAccessory", "WaistAccessory",
+    "Shirt", "Pants", "GraphicTShirt", "Face", "Head", "Torso", "LeftArm", "RightArm", "LeftLeg", "RightLeg",
+    "DepthScale", "HeadScale", "HeightScale", "ProportionScale", "WidthScale", "BodyTypeScale",
+    "ClimbAnimation", "FallAnimation", "IdleAnimation", "JumpAnimation", "RunAnimation", "SwimAnimation", "WalkAnimation"
+}
+local ColorProps = {
+    "HeadColor", "LeftArmColor", "LeftLegColor", "RightArmColor", "RightLegColor", "TorsoColor"
+}
 
 local function SaveDataToFile()
     if writefile then
@@ -174,7 +185,6 @@ local function LoadDataFromFile()
 end
 LoadDataFromFile()
 
--- دالة لاستخراج ID اللبس إذا كان رابط أو رقم
 local function GetAssetId(str)
     if type(str) == "string" then
         local id = string.match(str, "%d+")
@@ -236,7 +246,6 @@ BtnCancelOutfit.Position = UDim2.new(0.55, 0, 0.5, 0)
 BtnCancelOutfit.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
 BtnCancelOutfit.ZIndex = 11
 
--- نافذة الحذف (Delete Modal)
 local ModalDel = Instance.new("Frame", MainFrame)
 ModalDel.Size = UDim2.new(1, 0, 1, 0)
 ModalDel.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
@@ -282,12 +291,23 @@ local function RefreshSkinsUI()
             local char = Player.Character
             if char and char:FindFirstChild("Humanoid") then
                 
-                -- الطريقة الأولى: تطبيق الإكسسوارات الرسمية
-                local newDesc = char.Humanoid:GetAppliedDescription()
-                for k, v in pairs(skinProps) do pcall(function() newDesc[k] = v end) end
+                -- بناء شخصيتك المستنسخة
+                local newDesc = Instance.new("HumanoidDescription")
+                
+                for k, v in pairs(skinProps) do
+                    pcall(function()
+                        if type(v) == "table" and v.R and v.G and v.B then
+                            newDesc[k] = Color3.new(v.R, v.G, v.B) -- إرجاع الألوان
+                        else
+                            newDesc[k] = v -- إرجاع المقاسات والأيدي
+                        end
+                    end)
+                end
+                
+                -- تطبيق الطقم الشامل
                 pcall(function() char.Humanoid:ApplyDescription(newDesc) end)
                 
-                -- الطريقة الثانية (التركيب الإجباري): عشان يمنع مشكلة الاختفاء إذا الماب محمي
+                -- التركيب الإجباري للملابس والفيس كاحتياط
                 pcall(function()
                     if skinProps.Shirt and skinProps.Shirt ~= 0 then
                         local shirt = char:FindFirstChildOfClass("Shirt") or Instance.new("Shirt", char)
@@ -333,31 +353,38 @@ BtnSaveOutfit.MouseButton1Click:Connect(function()
     local char = Player.Character
     if name ~= "" and char and char:FindFirstChild("Humanoid") then
         local currentDesc = char.Humanoid:GetAppliedDescription()
+        local data = {}
         
-        -- سحب الملابس مباشرة من الشخصية لضمان عدم وجود أخطاء من الماب
+        -- 1. حفظ جميع الخصائص العادية والمقاسات والأجزاء
+        for _, prop in ipairs(StandardProps) do
+            pcall(function() data[prop] = currentDesc[prop] end)
+        end
+        
+        -- 2. حفظ ألوان البشرة كأرقام لأن الحفظ بملف ما يدعم ألوان مباشرة
+        for _, prop in ipairs(ColorProps) do
+            pcall(function()
+                local c = currentDesc[prop]
+                data[prop] = {R = c.R, G = c.G, B = c.B}
+            end)
+        end
+        
+        -- 3. سحب الملابس مباشرة من الشخصية لضمان عدم وجود أخطاء من الماب
         local cShirt = char:FindFirstChildOfClass("Shirt")
         local cPants = char:FindFirstChildOfClass("Pants")
         local cTShirt = char:FindFirstChildOfClass("ShirtGraphic")
         local head = char:FindFirstChild("Head")
         local cFace = head and head:FindFirstChildOfClass("Decal")
         
-        local data = {
-            HatAccessory = currentDesc.HatAccessory, HairAccessory = currentDesc.HairAccessory, FaceAccessory = currentDesc.FaceAccessory,
-            NeckAccessory = currentDesc.NeckAccessory, ShouldersAccessory = currentDesc.ShouldersAccessory, FrontAccessory = currentDesc.FrontAccessory,
-            BackAccessory = currentDesc.BackAccessory, WaistAccessory = currentDesc.WaistAccessory,
-            
-            -- حفظ الأيدي الأكيد والمضمون
-            Shirt = cShirt and GetAssetId(cShirt.ShirtTemplate) or currentDesc.Shirt,
-            Pants = cPants and GetAssetId(cPants.PantsTemplate) or currentDesc.Pants,
-            GraphicTShirt = cTShirt and GetAssetId(cTShirt.Graphic) or currentDesc.GraphicTShirt,
-            Face = cFace and GetAssetId(cFace.Texture) or currentDesc.Face
-        }
+        data.Shirt = cShirt and GetAssetId(cShirt.ShirtTemplate) or data.Shirt
+        data.Pants = cPants and GetAssetId(cPants.PantsTemplate) or data.Pants
+        data.GraphicTShirt = cTShirt and GetAssetId(cTShirt.Graphic) or data.GraphicTShirt
+        data.Face = cFace and GetAssetId(cFace.Texture) or data.Face
         
         SavedSkins[name] = data
         SaveDataToFile()
         RefreshSkinsUI()
         ModalAdd.Visible = false
-        Notify("Zoko Skins", "تم حفظ الطقم بنجاح!", Color3.fromRGB(0, 255, 127))
+        Notify("Zoko Skins", "تم حفظ الطقم المستنسخ بنجاح!", Color3.fromRGB(0, 255, 127))
     end
 end)
 
@@ -491,7 +518,6 @@ BtnGod.MouseButton1Click:Connect(function()
     BtnGod.TextColor3 = Features.GodMode and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
 end)
 
--- برمجة الطيران الجديدة (Q فوق / Z تحت / Shift بوست سرعة)
 local FlyLoop
 BtnFly.MouseButton1Click:Connect(function()
     Features.Fly = not Features.Fly
@@ -523,19 +549,16 @@ BtnFly.MouseButton1Click:Connect(function()
         FlyLoop = RunService.RenderStepped:Connect(function()
             local cam = workspace.CurrentCamera
             local move = Vector3.new(0,0,0)
-            local speed = 2.0 -- السرعة الأساسية
+            local speed = 2.0 
             
-            -- بوست السرعة إذا كان ضاغط شفت
             if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then speed = 8.0 end 
             
             if UIS:IsKeyDown(Enum.KeyCode.W) then move = move + cam.CFrame.LookVector end
             if UIS:IsKeyDown(Enum.KeyCode.S) then move = move - cam.CFrame.LookVector end
             if UIS:IsKeyDown(Enum.KeyCode.D) then move = move + cam.CFrame.RightVector end
             if UIS:IsKeyDown(Enum.KeyCode.A) then move = move - cam.CFrame.RightVector end
-            
-            -- التحكم بالارتفاع والنزول
-            if UIS:IsKeyDown(Enum.KeyCode.Q) then move = move + Vector3.new(0,1,0) end -- Q للارتفاع
-            if UIS:IsKeyDown(Enum.KeyCode.Z) then move = move - Vector3.new(0,1,0) end -- Z للنزول
+            if UIS:IsKeyDown(Enum.KeyCode.Q) then move = move + Vector3.new(0,1,0) end 
+            if UIS:IsKeyDown(Enum.KeyCode.Z) then move = move - Vector3.new(0,1,0) end 
             
             hrp.Velocity = Vector3.new(0,0,0)
             hrp.CFrame = hrp.CFrame + (move * speed)
@@ -664,18 +687,17 @@ DevBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- زر الريستارت الجديد (RESTART) بتصميم مطابق لـ كلمة ZOKO
+-- زر الريستارت الجديد (RESTART) 
 local RestartBtn = Instance.new("TextButton")
 RestartBtn.Size = UDim2.new(1, 0, 0, 20)
 RestartBtn.Position = UDim2.new(0, 0, 1, -22)
 RestartBtn.BackgroundTransparency = 1
 RestartBtn.Text = "RESTART"
 RestartBtn.TextColor3 = Color3.fromRGB(0, 212, 255)
-RestartBtn.Font = Enum.Font.GothamBlack -- نفس خط العنوان
-RestartBtn.TextSize = 16 -- حجم مشابه ومناسب
+RestartBtn.Font = Enum.Font.GothamBlack
+RestartBtn.TextSize = 16
 RestartBtn.Parent = MainFrame
 
--- تأثير Glow لزر الريستارت
 local RestartGlow = Instance.new("UIStroke")
 RestartGlow.Color = Color3.fromRGB(0, 212, 255)
 RestartGlow.Transparency = 0.5
