@@ -1,11 +1,12 @@
--- [[ Zoko Hub V3 - Ultimate Glass Edition (With Skins & Restart System) ]]
+-- [[ Zoko Hub V3 - Ultimate Glass Edition (Fixed Skins & Glow Restart) ]]
 
 local Player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
+local HttpService = game:GetService("HttpService")
 
--- حذف الواجهة القديمة إذا كانت موجودة (عشان نظام الريستارت)
+-- حذف الواجهة القديمة للريستارت
 if _G.ZokoUI then pcall(function() _G.ZokoUI:Destroy() end) end
 
 -- 1. إنشاء الواجهة الأساسية
@@ -13,7 +14,7 @@ local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "Zoko_UI"
 ScreenGui.Parent = Player:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
-_G.ZokoUI = ScreenGui -- حفظ الواجهة بالجلوبال
+_G.ZokoUI = ScreenGui
 
 -- الإطار الزجاجي (Main Frame)
 local MainFrame = Instance.new("Frame")
@@ -77,7 +78,7 @@ MakeDraggable(MainFrame)
 -- 2. إعداد القوائم (ScrollingFrames)
 -- ==========================================
 local ScrollFrame = Instance.new("ScrollingFrame")
-ScrollFrame.Size = UDim2.new(1, 0, 1, -110) -- تم تصغيرها قليلاً عشان زر الريستارت
+ScrollFrame.Size = UDim2.new(1, 0, 1, -110)
 ScrollFrame.Position = UDim2.new(0, 0, 0, 45)
 ScrollFrame.BackgroundTransparency = 1
 ScrollFrame.ScrollBarThickness = 4
@@ -90,7 +91,7 @@ ListLayout.Parent = ScrollFrame
 ListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 ListLayout.Padding = UDim.new(0, 8)
 
--- قائمة السكنات (مخفية بالبداية)
+-- قائمة السكنات
 local SkinsScroll = Instance.new("ScrollingFrame")
 SkinsScroll.Size = ScrollFrame.Size
 SkinsScroll.Position = ScrollFrame.Position
@@ -107,7 +108,7 @@ SkinsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 SkinsLayout.Padding = UDim.new(0, 8)
 SkinsLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
--- 3. نظام الإشعارات الفخم
+-- 3. نظام الإشعارات
 local function Notify(titleText, descText, color)
     local useColor = color or Color3.fromRGB(0, 212, 255)
     local NotifFrame = Instance.new("Frame")
@@ -151,10 +152,41 @@ local function Notify(titleText, descText, color)
 end
 
 -- ==========================================
--- نظام حفظ الأطقم (Skins System)
+-- نظام حفظ الأطقم الدائم (Permanent Skins System)
 -- ==========================================
 local SavedSkins = {}
 local SkinToDelete = ""
+local FileName = "ZokoHub_SavedSkins.json"
+
+local function SaveDataToFile()
+    if writefile then
+        local data = {}
+        for name, desc in pairs(SavedSkins) do
+            data[name] = {
+                HatAccessory = desc.HatAccessory, HairAccessory = desc.HairAccessory, FaceAccessory = desc.FaceAccessory,
+                NeckAccessory = desc.NeckAccessory, ShouldersAccessory = desc.ShouldersAccessory, FrontAccessory = desc.FrontAccessory,
+                BackAccessory = desc.BackAccessory, WaistAccessory = desc.WaistAccessory, Shirt = desc.Shirt, Pants = desc.Pants,
+                GraphicTShirt = desc.GraphicTShirt, Face = desc.Face, Head = desc.Head, Torso = desc.Torso,
+                LeftArm = desc.LeftArm, RightArm = desc.RightArm, LeftLeg = desc.LeftLeg, RightLeg = desc.RightLeg
+            }
+        end
+        pcall(function() writefile(FileName, HttpService:JSONEncode(data)) end)
+    end
+end
+
+local function LoadDataFromFile()
+    if readfile and isfile and isfile(FileName) then
+        local s, result = pcall(function() return HttpService:JSONDecode(readfile(FileName)) end)
+        if s and type(result) == "table" then
+            for name, props in pairs(result) do
+                local desc = Instance.new("HumanoidDescription")
+                for k, v in pairs(props) do pcall(function() desc[k] = v end) end
+                SavedSkins[name] = desc
+            end
+        end
+    end
+end
+LoadDataFromFile()
 
 local function CreateBaseButton(text, parent, order)
     local btn = Instance.new("TextButton")
@@ -171,9 +203,9 @@ local function CreateBaseButton(text, parent, order)
     return btn
 end
 
-local BtnBackToMenu = CreateBaseButton("🔙 العودة للقائمة", SkinsScroll, 1)
+local BtnBackToMenu = CreateBaseButton("العودة للقائمة", SkinsScroll, 1)
 BtnBackToMenu.TextColor3 = Color3.fromRGB(255, 100, 100)
-local BtnAddOutfit = CreateBaseButton("➕ إضافة طقم", SkinsScroll, 2)
+local BtnAddOutfit = CreateBaseButton("اضافة طقم", SkinsScroll, 2)
 BtnAddOutfit.TextColor3 = Color3.fromRGB(0, 255, 127)
 
 -- نوافذ السكنات (Modals)
@@ -201,7 +233,7 @@ BtnSaveOutfit.Position = UDim2.new(0.1, 0, 0.5, 0)
 BtnSaveOutfit.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
 BtnSaveOutfit.ZIndex = 11
 
-local BtnCancelOutfit = CreateBaseButton("إلغاء", ModalAdd)
+local BtnCancelOutfit = CreateBaseButton("الغاء", ModalAdd)
 BtnCancelOutfit.Size = UDim2.new(0.35, 0, 0, 35)
 BtnCancelOutfit.Position = UDim2.new(0.55, 0, 0.5, 0)
 BtnCancelOutfit.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
@@ -219,7 +251,7 @@ local DelText = Instance.new("TextLabel", ModalDel)
 DelText.Size = UDim2.new(1, 0, 0, 40)
 DelText.Position = UDim2.new(0, 0, 0.3, 0)
 DelText.BackgroundTransparency = 1
-DelText.Text = "هل أنت متأكد من الحذف؟"
+DelText.Text = "هل انت متاكد من الحذف؟"
 DelText.TextColor3 = Color3.fromRGB(255, 50, 50)
 DelText.Font = Enum.Font.GothamBold
 DelText.TextSize = 18
@@ -231,13 +263,12 @@ BtnConfirmDel.Position = UDim2.new(0.1, 0, 0.5, 0)
 BtnConfirmDel.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
 BtnConfirmDel.ZIndex = 11
 
-local BtnCancelDel = CreateBaseButton("إلغاء", ModalDel)
+local BtnCancelDel = CreateBaseButton("الغاء", ModalDel)
 BtnCancelDel.Size = UDim2.new(0.35, 0, 0, 35)
 BtnCancelDel.Position = UDim2.new(0.55, 0, 0.5, 0)
 BtnCancelDel.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 BtnCancelDel.ZIndex = 11
 
--- دوال السكنات
 local function RefreshSkinsUI()
     for _, child in pairs(SkinsScroll:GetChildren()) do
         if child:IsA("TextButton") and child.LayoutOrder > 2 then child:Destroy() end
@@ -246,14 +277,19 @@ local function RefreshSkinsUI()
     for skinName, desc in pairs(SavedSkins) do
         local btn = CreateBaseButton(skinName, SkinsScroll, 10)
         
+        local isApplying = false
         -- كلك يسار = تطبيق السكن
         btn.MouseButton1Click:Connect(function()
+            if isApplying then return end
+            isApplying = true
             if Player.Character and Player.Character:FindFirstChild("Humanoid") then
                 pcall(function()
                     Player.Character.Humanoid:ApplyDescription(desc)
                     Notify("Zoko Skins", "تم تطبيق الطقم: " .. skinName, Color3.fromRGB(0, 255, 127))
                 end)
             end
+            task.wait(0.5)
+            isApplying = false
         end)
         
         -- كلك يمين = حذف السكن
@@ -263,6 +299,7 @@ local function RefreshSkinsUI()
         end)
     end
 end
+RefreshSkinsUI() -- تحديث القائمة عند التشغيل
 
 BtnAddOutfit.MouseButton1Click:Connect(function() ModalAdd.Visible = true OutfitNameInput.Text = "" end)
 BtnCancelOutfit.MouseButton1Click:Connect(function() ModalAdd.Visible = false end)
@@ -270,9 +307,9 @@ BtnCancelOutfit.MouseButton1Click:Connect(function() ModalAdd.Visible = false en
 BtnSaveOutfit.MouseButton1Click:Connect(function()
     local name = OutfitNameInput.Text
     if name ~= "" and Player.Character and Player.Character:FindFirstChild("Humanoid") then
-        -- ينسخ كل الملابس والشعر والإكسسوارات اللي بالماب حالياً
         local currentDesc = Player.Character.Humanoid:GetAppliedDescription()
         SavedSkins[name] = currentDesc
+        SaveDataToFile() -- حفظ في الملف
         RefreshSkinsUI()
         ModalAdd.Visible = false
         Notify("Zoko Skins", "تم حفظ الطقم بنجاح!", Color3.fromRGB(0, 255, 127))
@@ -281,6 +318,7 @@ end)
 
 BtnConfirmDel.MouseButton1Click:Connect(function()
     SavedSkins[SkinToDelete] = nil
+    SaveDataToFile() -- تحديث الملف بعد الحذف
     RefreshSkinsUI()
     ModalDel.Visible = false
     Notify("Zoko Skins", "تم حذف الطقم!", Color3.fromRGB(255, 50, 50))
@@ -294,14 +332,8 @@ end)
 
 -- 4. المتغيرات والخصائص
 local Features = {
-    GodMode = false, 
-    Fly = false, 
-    Invisible = false, 
-    InfJump = false,
-    Ghost = false,
-    FakeMe = false,
-    CustomSpeed = false, SpeedValue = 50,
-    CustomJump = false, JumpValue = 100
+    GodMode = false, Fly = false, Invisible = false, InfJump = false,
+    Ghost = false, FakeMe = false, CustomSpeed = false, SpeedValue = 50, CustomJump = false, JumpValue = 100
 }
 local FakeClone = nil
 
@@ -353,13 +385,6 @@ local function CreateInputRow(text, defaultValue, parent)
 end
 
 -- إضافة الأزرار للواجهة
-local BtnSkinsMenu = CreateButton("👕 منيو السكنات", ScrollFrame)
-BtnSkinsMenu.TextColor3 = Color3.fromRGB(0, 212, 255)
-BtnSkinsMenu.MouseButton1Click:Connect(function()
-    ScrollFrame.Visible = false
-    SkinsScroll.Visible = true
-end)
-
 local BtnGod = CreateButton("God Mode & Anti-Ragdoll: OFF", ScrollFrame)
 local BtnFly = CreateButton("Fly: OFF", ScrollFrame)
 local BtnInvis = CreateButton("Sub: Invisible: OFF", ScrollFrame)
@@ -373,6 +398,14 @@ local BtnFakeMe = CreateButton("Fake Me (Desync): OFF", ScrollFrame)
 
 local BtnSpeed, BoxSpeed = CreateInputRow("Walk Speed: OFF", 50, ScrollFrame)
 local BtnJump, BoxJump = CreateInputRow("Jump Power: OFF", 100, ScrollFrame)
+
+-- منيو السكنات (تم نقله للأسفل)
+local BtnSkinsMenu = CreateButton("منيو السكنات", ScrollFrame)
+BtnSkinsMenu.TextColor3 = Color3.fromRGB(0, 212, 255)
+BtnSkinsMenu.MouseButton1Click:Connect(function()
+    ScrollFrame.Visible = false
+    SkinsScroll.Visible = true
+end)
 
 -- 6. برمجة المزايا والتفعيل
 local RenderLoop = RunService.RenderStepped:Connect(function()
@@ -390,10 +423,14 @@ local RenderLoop = RunService.RenderStepped:Connect(function()
         end)
     end
 
+    -- تقوية الاختفاء الوهمي عند اللاعبين
     if Features.Ghost then
         for _, v in pairs(char:GetDescendants()) do
             if v:IsA("BasePart") or v:IsA("Decal") then
-                if v.Name ~= "HumanoidRootPart" then v.Transparency = 1 end
+                if v.Name ~= "HumanoidRootPart" then 
+                    v.Transparency = 1 
+                    v.LocalTransparencyModifier = 1 -- أقوى للسيرفرات
+                end
             elseif v:IsA("BillboardGui") or v:IsA("SurfaceGui") then
                 v.Enabled = false
             end
@@ -553,7 +590,7 @@ BtnJump.MouseButton1Click:Connect(function()
 end)
 BoxJump.FocusLost:Connect(function() Features.JumpValue = tonumber(BoxJump.Text) or 100 end)
 
--- 7. زر الحقوق (Developed by Zoko) وزر الريستارت
+-- 7. زر الحقوق (Developed by Zoko) 
 local DevBtn = Instance.new("TextButton")
 DevBtn.Size = UDim2.new(1, 0, 0, 25)
 DevBtn.Position = UDim2.new(0, 0, 1, -45)
@@ -575,26 +612,32 @@ DevBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- زر الريستارت الصغير تحت الاسم
+-- زر الريستارت الجديد (RESTART) بتصميم Glow سماوي
 local RestartBtn = Instance.new("TextButton")
 RestartBtn.Size = UDim2.new(1, 0, 0, 15)
 RestartBtn.Position = UDim2.new(0, 0, 1, -20)
 RestartBtn.BackgroundTransparency = 1
-RestartBtn.Text = "Restart"
-RestartBtn.TextColor3 = Color3.fromRGB(100, 100, 100)
-RestartBtn.Font = Enum.Font.Gotham
-RestartBtn.TextSize = 10
+RestartBtn.Text = "RESTART"
+RestartBtn.TextColor3 = Color3.fromRGB(0, 212, 255) -- نفس لون اسمك
+RestartBtn.Font = Enum.Font.GothamBlack
+RestartBtn.TextSize = 11
 RestartBtn.Parent = MainFrame
 
+-- تأثير الـ Neon (Glow) للريستارت
+local RestartGlow = Instance.new("UIStroke")
+RestartGlow.Color = Color3.fromRGB(0, 212, 255)
+RestartGlow.Transparency = 0.5
+RestartGlow.Thickness = 0.6
+RestartGlow.Parent = RestartBtn
+
 RestartBtn.MouseButton1Click:Connect(function()
-    -- تنظيف العمليات لتجنب تعليق اللعبة
+    -- إيقاف اللوبات لتنظيف الذاكرة
     if RenderLoop then RenderLoop:Disconnect() end
     if FlyLoop then FlyLoop:Disconnect() end
     if JumpLoop then JumpLoop:Disconnect() end
     ScreenGui:Destroy()
     
-    -- إحضار الكود من جيت هاب مجدداً
-    -- (ضع رابط الـ raw الخاص بك هنا بدلاً من الرابط هذا إذا تغير)
+    -- تحميل السكربت مجدداً من ملفك
     pcall(function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/Ray2133231/Zoko2/main/main.lua"))()
     end)
@@ -612,7 +655,7 @@ OpenBtn.TextColor3 = Color3.fromRGB(25, 25, 25)
 OpenBtn.Parent = ScreenGui
 Instance.new("UICorner", OpenBtn).CornerRadius = UDim.new(1, 0)
 
-MakeDraggable(OpenBtn) -- جعل زر الفتح قابل للسحب أيضاً
+MakeDraggable(OpenBtn)
 
 OpenBtn.MouseButton1Click:Connect(function()
     if MainFrame.Visible then
@@ -625,5 +668,5 @@ OpenBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- تشغيل أنميشن الفتح تلقائياً أول ما يشتغل السكربت
+-- تشغيل أنميشن الفتح
 MainFrame:TweenSize(UDim2.new(0, 270, 0, 400), "Out", "Back", 0.6, true)
