@@ -1,5 +1,3 @@
--- [[ Zoko Hub V24 - Spectate Image Fix & Smart Speed ]]
-
 local Player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
@@ -16,9 +14,6 @@ ScreenGui.Parent = Player:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 _G.ZokoUI = ScreenGui
 
--- ==========================================
--- نظام تنظيف العصا
--- ==========================================
 local function CleanupWands()
     pcall(function()
         for _, v in pairs(Player.Backpack:GetChildren()) do
@@ -33,9 +28,7 @@ local function CleanupWands()
 end
 CleanupWands()
 
--- ==========================================
--- الواجهة الرئيسية
--- ==========================================
+
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 0, 0, 0)
 MainFrame.Position = UDim2.new(0.5, -135, 0.5, -200)
@@ -53,7 +46,7 @@ Stroke.Thickness = 2
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.BackgroundTransparency = 1
-Title.Text = "ZOKO HUB V24"
+    Title.Text = "Zoko Trainer V1"
 Title.TextColor3 = Color3.fromRGB(0, 212, 255)
 Title.Font = Enum.Font.GothamBlack
 Title.TextSize = 22
@@ -140,9 +133,7 @@ local function Notify(titleText, descText, color)
     NotifFrame:Destroy()
 end
 
--- ==========================================
--- لوحة التحكم باللاعبين
--- ==========================================
+
 local SelectedTargets = {} 
 local TargetCards = {}     
 local ActiveTarget = nil   
@@ -203,17 +194,16 @@ local function CreateControlButton(text, color)
     return btn
 end
 
-local BtnCmdFling = CreateControlButton("Fling (تطيير): OFF", Color3.fromRGB(200, 200, 200))
-local BtnCmdTp = CreateControlButton("Teleport (انتقال)", Color3.fromRGB(80, 200, 255))
-local BtnCmdBring = CreateControlButton("Bring (سحب)", Color3.fromRGB(255, 200, 80))
-local BtnCmdSpec = CreateControlButton("Spectate (مشاهدة)", Color3.fromRGB(100, 255, 100))
-local BtnCmdScare = CreateControlButton("Scare (تخويف): OFF", Color3.fromRGB(200, 200, 200))
+local BtnCmdFling = CreateControlButton("Fling: OFF", Color3.fromRGB(200, 200, 200))
+local BtnCmdTp = CreateControlButton("Teleport", Color3.fromRGB(80, 200, 255))
+local BtnCmdBring = CreateControlButton("Bring", Color3.fromRGB(255, 200, 80))
+local BtnCmdSpec = CreateControlButton("Spectate", Color3.fromRGB(100, 255, 100))
+local BtnCmdScare = CreateControlButton("Scare: OFF", Color3.fromRGB(200, 200, 200))
 
 local isScaring = false
 local isFlinging = false
 local FlingLoop = nil
 
--- التحديد المضمون للألوان بالكروت
 local function SetActiveTarget(plr)
     ActiveTarget = plr
     for userId, card in pairs(TargetCards) do
@@ -293,7 +283,6 @@ local function AddTarget(plr)
     Img.Active = false
     Instance.new("UICorner", Img).CornerRadius = UDim.new(1, 0)
     
-    -- جلب الصورة بشكل آمن للكروت
     pcall(function() 
         local imgContent, isReady = game.Players:GetUserThumbnailAsync(plr.UserId, Enum.ThumbnailType.AvatarBust, Enum.ThumbnailSize.Size150x150)
         Img.Image = imgContent 
@@ -337,9 +326,7 @@ BtnCloseControl.MouseButton1Click:Connect(function()
     ControlFrame.Visible = false 
 end)
 
--- ==========================================
--- إعدادات واجهة السبكتيت
--- ==========================================
+
 SpecFrame.Size = UDim2.new(0, 200, 0, 70)
 SpecFrame.Position = UDim2.new(0.5, -100, 0.9, -80)
 SpecFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
@@ -374,9 +361,7 @@ SpecClose.TextSize = 16
 Instance.new("UICorner", SpecClose).CornerRadius = UDim.new(0, 6)
 SpecClose.MouseButton1Click:Connect(StopSpectating)
 
--- ==========================================
--- أوامر لوحة التحكم
--- ==========================================
+
 BtnCmdTp.MouseButton1Click:Connect(function()
     local tPlayer = ActiveTarget
     if tPlayer and tPlayer.Character and tPlayer.Character:FindFirstChild("HumanoidRootPart") and Player.Character then
@@ -414,8 +399,7 @@ BtnCmdSpec.MouseButton1Click:Connect(function()
         ControlFrame.Visible = false
         SpecFrame.Visible = true
         SpecName.Text = tPlayer.DisplayName
-        
-        -- التصليح هنا: سحب الصورة بنفس طريقة الكروت عشان تضمن إنها تطلع 100٪
+
         pcall(function() 
             local imgContent, isReady = game.Players:GetUserThumbnailAsync(tPlayer.UserId, Enum.ThumbnailType.AvatarBust, Enum.ThumbnailSize.Size150x150)
             SpecImage.Image = imgContent
@@ -432,13 +416,12 @@ BtnCmdSpec.MouseButton1Click:Connect(function()
     end
 end)
 
--- نظام التطيير
 BtnCmdFling.MouseButton1Click:Connect(function()
     isFlinging = not isFlinging
     if isFlinging then
-        BtnCmdFling.Text = "Fling (تطيير): ON"
+        BtnCmdFling.Text = "Fling: ON"
         BtnCmdFling.TextColor3 = Color3.fromRGB(0, 255, 127)
-        Notify("Fling", "تم تشغيل وضع الخلاط (الطيارة)!", Color3.fromRGB(0, 255, 127))
+        Notify("Fling", "تم تشغيل وضع التطير!", Color3.fromRGB(0, 255, 127))
         
         if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
             local myHRP = Player.Character.HumanoidRootPart
@@ -455,7 +438,7 @@ BtnCmdFling.MouseButton1Click:Connect(function()
             end)
         end
     else
-        BtnCmdFling.Text = "Fling (تطيير): OFF"
+        BtnCmdFling.Text = "Fling : OFF"
         BtnCmdFling.TextColor3 = Color3.fromRGB(200, 200, 200)
         Notify("Fling", "تم إيقاف التطيير.", Color3.fromRGB(200, 200, 200))
         
@@ -469,11 +452,10 @@ BtnCmdFling.MouseButton1Click:Connect(function()
     end
 end)
 
--- نظام التخويف السينمائي
 BtnCmdScare.MouseButton1Click:Connect(function()
     isScaring = not isScaring
     if isScaring then
-        BtnCmdScare.Text = "Scare (تخويف): ON"
+        BtnCmdScare.Text = "Scare: ON"
         BtnCmdScare.TextColor3 = Color3.fromRGB(0, 255, 127)
         Notify("Scare", "بدأ سيناريو التخويف!", Color3.fromRGB(0, 255, 127))
         
@@ -521,15 +503,13 @@ BtnCmdScare.MouseButton1Click:Connect(function()
             end
         end)
     else
-        BtnCmdScare.Text = "Scare (تخويف): OFF"
+        BtnCmdScare.Text = "Scare: OFF"
         BtnCmdScare.TextColor3 = Color3.fromRGB(200, 200, 200)
         Notify("Scare", "تم إيقاف التخويف.", Color3.fromRGB(200, 200, 200))
     end
 end)
 
--- ==========================================
--- الأزرار الرئيسية وإعدادات السرعة الذكية
--- ==========================================
+
 local Features = {
     Fly = false, FlyNoclip = false, GodMode = false, InfJump = false, Noclip = false, 
     InstantPrompt = false, SuperHit = false, AntiAFK = true, ControlWand = false, ESP = false,
@@ -584,15 +564,15 @@ local function CreateInputRow(text, defaultValue, parent)
     return ToggleBtn, InputBox
 end
 
-local BtnWand = CreateButton("Control Wand (أداة التحكم): OFF", ScrollFrame)
-local BtnFly = CreateButton("Fly (Shift/Q/Z): OFF", ScrollFrame)
-local BtnFlyNoclip = CreateButton("Fly Noclip (اختراق): OFF", ScrollFrame)
+local BtnWand = CreateButton("Control Wand : OFF", ScrollFrame)
+local BtnFly = CreateButton("Fly : OFF", ScrollFrame)
+local BtnFlyNoclip = CreateButton("Fly Noclip : OFF", ScrollFrame)
 BtnFlyNoclip.Visible = false
-local BtnESP = CreateButton("ESP (X-Ray - كشف): OFF", ScrollFrame)
+local BtnESP = CreateButton("ESP: OFF", ScrollFrame)
 local BtnGod = CreateButton("God Mode & No Ragdoll: OFF", ScrollFrame)
-local BtnNoclip = CreateButton("Noclip (Anti-Rubberband): OFF", ScrollFrame)
-local BtnInstant = CreateButton("Instant Interact (No Hold): OFF", ScrollFrame)
-local BtnSuperHit = CreateButton("Super Hero Hit (Fling): OFF", ScrollFrame)
+local BtnNoclip = CreateButton("Noclip: OFF", ScrollFrame)
+local BtnInstant = CreateButton("Instant Interact: OFF", ScrollFrame)
+local BtnSuperHit = CreateButton("Super Hero Hit : OFF", ScrollFrame)
 local BtnInfJump = CreateButton("Infinite Jump: OFF", ScrollFrame)
 local BtnAntiAFK = CreateButton("Anti-AFK: ON", ScrollFrame)
 BtnAntiAFK.TextColor3 = Color3.fromRGB(0, 255, 127)
@@ -621,14 +601,12 @@ local function UpdateSpeedDisplay()
     BoxSpeed.Text = tostring(val)
 end
 
--- ==========================================
--- الأنظمة (Loops & Functions)
--- ==========================================
+
 
 local ESPLoop = nil
 BtnESP.MouseButton1Click:Connect(function()
     Features.ESP = not Features.ESP
-    BtnESP.Text = Features.ESP and "ESP (X-Ray - كشف): ON" or "ESP (X-Ray - كشف): OFF"
+    BtnESP.Text = Features.ESP and "ESP : ON" or "ESP : OFF"
     BtnESP.TextColor3 = Features.ESP and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
     
     if Features.ESP then
@@ -689,7 +667,7 @@ end
 
 BtnWand.MouseButton1Click:Connect(function()
     Features.ControlWand = not Features.ControlWand
-    BtnWand.Text = Features.ControlWand and "Control Wand (أداة التحكم): ON" or "Control Wand (أداة التحكم): OFF"
+    BtnWand.Text = Features.ControlWand and "Control Wand : ON" or "Control Wand : OFF"
     BtnWand.TextColor3 = Features.ControlWand and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
     
     CleanupWands() 
@@ -699,7 +677,7 @@ BtnWand.MouseButton1Click:Connect(function()
         currentWand.RequiresHandle = false
         currentWand.CanBeDropped = false
         currentWand.Name = "Zoko Control"
-        currentWand.ToolTip = "اضغط على لاعب لإضافته/حذفه (الحد 3)"
+        currentWand.ToolTip = "اضغط على لاعب لإضافته"
         currentWand.TextureId = "rbxassetid://100414902"
         currentWand.Parent = Player.Backpack
         currentWand.Activated:Connect(function()
@@ -776,7 +754,7 @@ BtnFly.MouseButton1Click:Connect(function()
         
         if Features.FlyNoclip then
             Features.FlyNoclip = false
-            BtnFlyNoclip.Text = "Fly Noclip (اختراق): OFF"
+            BtnFlyNoclip.Text = "Fly Noclip: OFF"
             BtnFlyNoclip.TextColor3 = Color3.fromRGB(200, 200, 200)
             if FlyNoclipLoop then FlyNoclipLoop:Disconnect() end
             
