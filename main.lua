@@ -1,4 +1,4 @@
--- [[ Zoko Hub V17 - Perfect Multi-Target & Avatar Fix ]]
+-- [[ Zoko Hub V18 - Ultimate Control & Scare Toggle ]]
 
 local Player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -15,6 +15,23 @@ ScreenGui.Name = "Zoko_UI"
 ScreenGui.Parent = Player:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 _G.ZokoUI = ScreenGui
+
+-- ==========================================
+-- نظام تنظيف العصا (يمنع التكرار)
+-- ==========================================
+local function CleanupWands()
+    pcall(function()
+        for _, v in pairs(Player.Backpack:GetChildren()) do
+            if v.Name == "Zoko Control" then v:Destroy() end
+        end
+        if Player.Character then
+            for _, v in pairs(Player.Character:GetChildren()) do
+                if v.Name == "Zoko Control" then v:Destroy() end
+            end
+        end
+    end)
+end
+CleanupWands() -- تنظيف عند بداية التشغيل
 
 -- ==========================================
 -- الواجهة الرئيسية
@@ -36,7 +53,7 @@ Stroke.Thickness = 2
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.BackgroundTransparency = 1
-Title.Text = "ZOKO HUB V17"
+Title.Text = "ZOKO HUB V18"
 Title.TextColor3 = Color3.fromRGB(0, 212, 255)
 Title.Font = Enum.Font.GothamBlack
 Title.TextSize = 22
@@ -138,7 +155,6 @@ ControlFrame.Position = UDim2.new(0.5, 150, 0.5, -150)
 ControlFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 ControlFrame.Visible = false
 ControlFrame.Parent = ScreenGui
-ControlFrame.Active = true -- يمنع الواجهة من سحب التحكم بالكامل
 Instance.new("UICorner", ControlFrame).CornerRadius = UDim.new(0, 12)
 local CStroke = Instance.new("UIStroke", ControlFrame)
 CStroke.Color = Color3.fromRGB(255, 100, 100)
@@ -155,13 +171,16 @@ TargetTitle.Font = Enum.Font.GothamBold
 TargetTitle.TextSize = 14
 
 local TargetsContainer = Instance.new("Frame", ControlFrame)
-TargetsContainer.Size = UDim2.new(1, -10, 0, 100)
-TargetsContainer.Position = UDim2.new(0, 5, 0, 30)
+TargetsContainer.Size = UDim2.new(1, 0, 0, 100)
+TargetsContainer.Position = UDim2.new(0, 0, 0, 30)
 TargetsContainer.BackgroundTransparency = 1
 
+-- ترتيب ثابت من اليسار عشان ما تتلخبط البطاقات
+local TPadding = Instance.new("UIPadding", TargetsContainer)
+TPadding.PaddingLeft = UDim.new(0, 8)
 local TListLayout = Instance.new("UIListLayout", TargetsContainer)
 TListLayout.FillDirection = Enum.FillDirection.Horizontal
-TListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+TListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 TListLayout.Padding = UDim.new(0, 8)
 
 local ControlButtonsFrame = Instance.new("Frame", ControlFrame)
@@ -185,11 +204,16 @@ local function CreateControlButton(text, color)
     return btn
 end
 
+-- إزالة كلمة "الكل" من الأزرار
 local BtnCmdFling = CreateControlButton("Fling (تطيير)", Color3.fromRGB(255, 80, 80))
 local BtnCmdTp = CreateControlButton("Teleport (انتقال)", Color3.fromRGB(80, 200, 255))
 local BtnCmdBring = CreateControlButton("Bring (سحب)", Color3.fromRGB(255, 200, 80))
 local BtnCmdSpec = CreateControlButton("Spectate (مشاهدة)", Color3.fromRGB(100, 255, 100))
-local BtnCmdScare = CreateControlButton("Scare (تخويف)", Color3.fromRGB(200, 100, 255))
+
+-- زر التخويف سويناه متغير الحالة
+local isScaring = false
+local ScareLoop = nil
+local BtnCmdScare = CreateControlButton("Scare (تخويف): OFF", Color3.fromRGB(200, 200, 200))
 
 local function SetActiveTarget(plr)
     ActiveTarget = plr
@@ -258,11 +282,10 @@ local function AddTarget(plr)
     SelectedTargets[plr.UserId] = plr
     ControlFrame.Visible = true
 
-    -- البطاقة الرئيسية (صار الضغط عليها يحدد اللاعب بدون أزرار شفافة تسبب تداخل)
     local Card = Instance.new("TextButton", TargetsContainer)
     Card.Size = UDim2.new(0, 80, 0, 100)
     Card.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-    Card.Text = "" -- زر بدون نص
+    Card.Text = "" 
     Card.AutoButtonColor = false
     Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 8)
     TargetCards[plr.UserId] = Card
@@ -275,7 +298,6 @@ local function AddTarget(plr)
     Img.BackgroundTransparency = 1
     Instance.new("UICorner", Img).CornerRadius = UDim.new(1, 0)
     pcall(function()
-        -- جبنا وضعية الشخصية الكاملة بدال الوجه بس
         Img.Image = game.Players:GetUserThumbnailAsync(plr.UserId, Enum.ThumbnailType.AvatarBust, Enum.ThumbnailSize.Size150x150)
     end)
 
@@ -355,7 +377,7 @@ Instance.new("UICorner", SpecClose).CornerRadius = UDim.new(0, 6)
 
 SpecClose.MouseButton1Click:Connect(StopSpectating)
 
--- أوامر لوحة التحكم (تنفذ على ActiveTarget فقط)
+-- أوامر لوحة التحكم
 BtnCmdTp.MouseButton1Click:Connect(function()
     local tPlayer = ActiveTarget
     if tPlayer and tPlayer.Character and tPlayer.Character:FindFirstChild("HumanoidRootPart") and Player.Character then
@@ -436,23 +458,28 @@ BtnCmdSpec.MouseButton1Click:Connect(function()
     end
 end)
 
+-- نظام التخويف المستمر (ON/OFF) والشقلبة
 BtnCmdScare.MouseButton1Click:Connect(function()
-    local tPlayer = ActiveTarget
-    if tPlayer and tPlayer.Character and tPlayer.Character:FindFirstChild("HumanoidRootPart") and Player.Character then
-        local myHRP = Player.Character:FindFirstChild("HumanoidRootPart")
-        local targetHRP = tPlayer.Character.HumanoidRootPart
-        if myHRP then
-            local originalPos = myHRP.CFrame
-            Notify("Scare", "جاري تخويف " .. tPlayer.DisplayName .. "!", Color3.fromRGB(200, 100, 255))
-            local scareLoop = RunService.Heartbeat:Connect(function()
-               if targetHRP then myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, -3) * CFrame.Angles(0, math.pi, 0) end
-            end)
-            task.wait(2.5)
-            scareLoop:Disconnect()
-            myHRP.CFrame = CFrame.new(0, 99999, 0)
-            task.wait(0.5)
-            myHRP.CFrame = originalPos
-        end
+    isScaring = not isScaring
+    if isScaring then
+        BtnCmdScare.Text = "Scare (تخويف): ON"
+        BtnCmdScare.TextColor3 = Color3.fromRGB(0, 255, 127)
+        Notify("Scare", "تم تشغيل التخويف المستمر!", Color3.fromRGB(0, 255, 127))
+        
+        ScareLoop = RunService.Heartbeat:Connect(function()
+            local tPlayer = ActiveTarget
+            if tPlayer and tPlayer.Character and tPlayer.Character:FindFirstChild("HumanoidRootPart") and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+                local myHRP = Player.Character.HumanoidRootPart
+                local targetHRP = tPlayer.Character.HumanoidRootPart
+                -- شقلبة سريعة ومستمرة قدام وجه اللاعب
+                myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, -2.5) * CFrame.Angles(math.rad(tick() * 1500), math.rad(tick() * 2000), 0)
+            end
+        end)
+    else
+        BtnCmdScare.Text = "Scare (تخويف): OFF"
+        BtnCmdScare.TextColor3 = Color3.fromRGB(200, 200, 200)
+        if ScareLoop then ScareLoop:Disconnect() ScareLoop = nil end
+        Notify("Scare", "تم إيقاف التخويف.", Color3.fromRGB(200, 200, 200))
     end
 end)
 
@@ -544,9 +571,12 @@ BtnWand.MouseButton1Click:Connect(function()
     Features.ControlWand = not Features.ControlWand
     BtnWand.Text = Features.ControlWand and "Control Wand (أداة التحكم): ON" or "Control Wand (أداة التحكم): OFF"
     BtnWand.TextColor3 = Features.ControlWand and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
+    
+    CleanupWands() -- دايم ينظف عشان ما يتكرر
+    
     if Features.ControlWand then
         local currentWand = Instance.new("Tool")
-        currentWand.RequiresHandle = false -- عشان ما يخرب الأنيميشن
+        currentWand.RequiresHandle = false
         currentWand.CanBeDropped = false
         currentWand.Name = "Zoko Control"
         currentWand.ToolTip = "اضغط على لاعب لإضافته/حذفه من التحكم (الحد 3)"
@@ -564,8 +594,6 @@ BtnWand.MouseButton1Click:Connect(function()
             end
         end)
     else
-        local wand = Player.Backpack:FindFirstChild("Zoko Control") or Player.Character:FindFirstChild("Zoko Control")
-        if wand then wand:Destroy() end
         ControlFrame.Visible = false
     end
 end)
@@ -798,8 +826,8 @@ BtnInfJump.MouseButton1Click:Connect(function()
     BtnInfJump.TextColor3 = Features.InfJump and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
 end)
 
+-- إصلاح النط بشكل جذري (حتى لو الواجهة مفتوحة)
 local JumpLoop = UIS.JumpRequest:Connect(function()
-    -- حلينا مشكلة النط أثناء مسك العصا
     if Features.InfJump and Player.Character and Player.Character:FindFirstChildOfClass("Humanoid") then
         Player.Character:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.Jumping)
     elseif Player.Character and Player.Character:FindFirstChildOfClass("Humanoid") then
@@ -873,6 +901,7 @@ RestartGlow.Thickness = 0.6
 RestartGlow.Parent = RestartBtn
 
 RestartBtn.MouseButton1Click:Connect(function()
+    CleanupWands() -- تأكيد تنظيف العصا قبل ما يرست
     if RenderLoop then RenderLoop:Disconnect() end
     if NoclipLoop then NoclipLoop:Disconnect() end
     if InstantInteractLoop then InstantInteractLoop:Disconnect() end
@@ -880,6 +909,7 @@ RestartBtn.MouseButton1Click:Connect(function()
     if SpectateLoop then SpectateLoop:Disconnect() end
     if FlyLoop then FlyLoop:Disconnect() end
     if FlyNoclipLoop then FlyNoclipLoop:Disconnect() end
+    if ScareLoop then ScareLoop:Disconnect() end
     if bg then bg:Destroy() end
     if bv then bv:Destroy() end
     
