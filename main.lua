@@ -1,4 +1,4 @@
--- [[ Zoko Hub V10 - The Ultimate Controller (Fly Fix, Image Fix, Scare Button UI) ]]
+-- [[ Zoko Hub V12 - The Vehicle & Fly-Noclip Edition ]]
 
 local Player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -36,7 +36,7 @@ Stroke.Thickness = 2
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.BackgroundTransparency = 1
-Title.Text = "ZOKO HUB V10"
+Title.Text = "ZOKO HUB V12"
 Title.TextColor3 = Color3.fromRGB(0, 212, 255)
 Title.Font = Enum.Font.GothamBlack
 Title.TextSize = 22
@@ -74,7 +74,7 @@ ScrollFrame.Position = UDim2.new(0, 0, 0, 45)
 ScrollFrame.BackgroundTransparency = 1
 ScrollFrame.ScrollBarThickness = 4
 ScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(0, 212, 255)
-ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 550)
+ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 600)
 ScrollFrame.Parent = MainFrame
 
 local ListLayout = Instance.new("UIListLayout")
@@ -129,7 +129,6 @@ end
 local TargetPlayer = nil
 local SpectateLoop = nil
 
--- لوحة التحكم المنبثقة
 local ControlFrame = Instance.new("Frame")
 ControlFrame.Size = UDim2.new(0, 250, 0, 350)
 ControlFrame.Position = UDim2.new(0.5, 150, 0.5, -150)
@@ -164,7 +163,6 @@ TargetUser.TextColor3 = Color3.fromRGB(150, 150, 150)
 TargetUser.Font = Enum.Font.GothamMedium
 TargetUser.TextSize = 12
 
--- ترتيب الأزرار التلقائي عشان ما يختفي أي زر
 local ControlButtonsFrame = Instance.new("Frame", ControlFrame)
 ControlButtonsFrame.Size = UDim2.new(1, 0, 0, 180)
 ControlButtonsFrame.Position = UDim2.new(0, 0, 0, 145)
@@ -202,7 +200,6 @@ BtnCloseControl.Font = Enum.Font.GothamBold
 BtnCloseControl.TextSize = 18
 BtnCloseControl.MouseButton1Click:Connect(function() ControlFrame.Visible = false end)
 
--- لوحة المشاهدة (Spectate UI)
 local SpecFrame = Instance.new("Frame")
 SpecFrame.Size = UDim2.new(0, 200, 0, 70)
 SpecFrame.Position = UDim2.new(0.5, -100, 0.9, -80)
@@ -245,10 +242,15 @@ SpecClose.MouseLeave:Connect(function()
 end)
 
 local function StopSpectating()
-    if SpectateLoop then SpectateLoop:Disconnect() SpectateLoop = nil end
+    if SpectateLoop then 
+        SpectateLoop:Disconnect() 
+        SpectateLoop = nil 
+    end
+    task.wait(0.1)
     local char = Player.Character
     if char and char:FindFirstChild("Humanoid") then
         workspace.CurrentCamera.CameraSubject = char.Humanoid
+        workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
     end
     SpecFrame.Visible = false
     MainFrame.Visible = true
@@ -261,7 +263,6 @@ local function OpenControlPanel(plr)
     TargetDisplay.Text = plr.DisplayName
     TargetUser.Text = "@" .. plr.Name
     pcall(function()
-        -- تصليح سحب الصورة (الحين تشتغل 100%)
         local thumbContent, isReady = game.Players:GetUserThumbnailAsync(plr.UserId, Enum.ThumbnailType.AvatarHeadShot, Enum.ThumbnailSize.Size150x150)
         TargetImage.Image = thumbContent
         SpecImage.Image = thumbContent
@@ -270,7 +271,6 @@ local function OpenControlPanel(plr)
     ControlFrame.Visible = true
 end
 
--- أوامر لوحة التحكم
 BtnCmdTp.MouseButton1Click:Connect(function()
     if TargetPlayer and TargetPlayer.Character and TargetPlayer.Character:FindFirstChild("HumanoidRootPart") and Player.Character then
         Player.Character.HumanoidRootPart.CFrame = TargetPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, -3)
@@ -285,27 +285,19 @@ BtnCmdFling.MouseButton1Click:Connect(function()
         if myHRP then
             local startPos = myHRP.CFrame
             Notify("Fling", "جاري تطيير " .. TargetPlayer.DisplayName .. "...", Color3.fromRGB(255, 50, 50))
-            
             local bv = Instance.new("BodyVelocity")
             bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
             bv.Velocity = Vector3.new(0, 50, 0)
             bv.Parent = myHRP
-
             local bav = Instance.new("BodyAngularVelocity")
             bav.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
             bav.AngularVelocity = Vector3.new(10000, 10000, 10000)
             bav.Parent = myHRP
-
-            local spinLoop = RunService.Heartbeat:Connect(function()
-                myHRP.CFrame = targetHRP.CFrame
-            end)
-            
+            local spinLoop = RunService.Heartbeat:Connect(function() myHRP.CFrame = targetHRP.CFrame end)
             task.wait(1.5)
-            
             if spinLoop then spinLoop:Disconnect() end
             if bv then bv:Destroy() end
             if bav then bav:Destroy() end
-            
             myHRP.Velocity = Vector3.new(0,0,0)
             myHRP.RotVelocity = Vector3.new(0,0,0)
             myHRP.CFrame = startPos
@@ -320,12 +312,10 @@ BtnCmdBring.MouseButton1Click:Connect(function()
         if myHRP then
             local myPos = myHRP.CFrame
             Notify("Bring", "محاولة سحب " .. TargetPlayer.DisplayName .. " لك...", Color3.fromRGB(255, 200, 80))
-            
             local spinLoop = RunService.Heartbeat:Connect(function()
                 myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, 1)
                 myHRP.Velocity = (myPos.Position - targetHRP.Position).Unit * 100
             end)
-            
             task.wait(1.5)
             if spinLoop then spinLoop:Disconnect() end
             myHRP.Velocity = Vector3.new(0,0,0)
@@ -341,7 +331,6 @@ BtnCmdSpec.MouseButton1Click:Connect(function()
         ControlFrame.Visible = false
         SpecFrame.Visible = true
         Notify("Spectate", "أنت الآن تشاهد " .. TargetPlayer.DisplayName)
-        
         if SpectateLoop then SpectateLoop:Disconnect() end
         SpectateLoop = RunService.RenderStepped:Connect(function()
             if TargetPlayer and TargetPlayer.Character and TargetPlayer.Character:FindFirstChild("Humanoid") then
@@ -358,22 +347,16 @@ BtnCmdScare.MouseButton1Click:Connect(function()
     if TargetPlayer and TargetPlayer.Character and TargetPlayer.Character:FindFirstChild("HumanoidRootPart") and Player.Character then
         local myHRP = Player.Character:FindFirstChild("HumanoidRootPart")
         local targetHRP = TargetPlayer.Character.HumanoidRootPart
-        
         if myHRP then
             local originalPos = myHRP.CFrame
             Notify("Scare", "جاري تخويف " .. TargetPlayer.DisplayName .. "!", Color3.fromRGB(200, 100, 255))
-            
             local scareLoop = RunService.Heartbeat:Connect(function()
-               if targetHRP then
-                   myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, -3) * CFrame.Angles(0, math.pi, 0)
-               end
+               if targetHRP then myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, -3) * CFrame.Angles(0, math.pi, 0) end
             end)
             task.wait(3)
             scareLoop:Disconnect()
-            
             myHRP.CFrame = CFrame.new(0, 99999, 0)
             task.wait(3)
-            
             myHRP.CFrame = originalPos
         end
     end
@@ -383,7 +366,7 @@ end)
 -- الأزرار الرئيسية والميزات الأساسية
 -- ==========================================
 local Features = {
-    Fly = false, GodMode = false, InfJump = false, Noclip = false, 
+    Fly = false, FlyNoclip = false, GodMode = false, InfJump = false, Noclip = false, 
     InstantPrompt = false, SuperHit = false, AntiAFK = true, ControlWand = false,
     CustomSpeed = false, SpeedValue = 50, CustomJump = false, JumpValue = 100
 }
@@ -436,6 +419,7 @@ end
 
 local BtnWand = CreateButton("Control Wand (أداة التحكم): OFF", ScrollFrame)
 local BtnFly = CreateButton("Fly (Shift/Q/Z): OFF", ScrollFrame)
+local BtnFlyNoclip = CreateButton("Fly Noclip (اختراق أثناء الطيران): OFF", ScrollFrame)
 local BtnGod = CreateButton("God Mode & No Ragdoll: OFF", ScrollFrame)
 local BtnNoclip = CreateButton("Noclip (Anti-Rubberband): OFF", ScrollFrame)
 local BtnInstant = CreateButton("Instant Interact (No Hold): OFF", ScrollFrame)
@@ -451,62 +435,70 @@ local BtnJump, BoxJump = CreateInputRow("Jump Power: OFF", 100, ScrollFrame)
 -- الأنظمة (Loops)
 -- ==========================================
 
--- نظام عصا التحكم (Control Wand)
-local currentWand = nil
 BtnWand.MouseButton1Click:Connect(function()
     Features.ControlWand = not Features.ControlWand
     BtnWand.Text = Features.ControlWand and "Control Wand (أداة التحكم): ON" or "Control Wand (أداة التحكم): OFF"
     BtnWand.TextColor3 = Features.ControlWand and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
-    
     if Features.ControlWand then
-        currentWand = Instance.new("Tool")
+        local currentWand = Instance.new("Tool")
         currentWand.RequiresHandle = false
         currentWand.Name = "Zoko Control"
         currentWand.ToolTip = "اضغط على لاعب لفتح لوحة التحكم"
         currentWand.TextureId = "rbxassetid://100414902"
         currentWand.Parent = Player.Backpack
-        
         currentWand.Activated:Connect(function()
             local target = Mouse.Target
             if target and target.Parent then
                 local model = target.Parent
                 if not model:FindFirstChild("Humanoid") then model = model.Parent end
-                
                 if model and model:FindFirstChild("Humanoid") then
                     local plr = game.Players:GetPlayerFromCharacter(model)
-                    if plr and plr ~= Player then
-                        OpenControlPanel(plr)
-                    end
+                    if plr and plr ~= Player then OpenControlPanel(plr) end
                 end
             end
         end)
     else
-        if currentWand then currentWand:Destroy() currentWand = nil end
+        local wand = Player.Backpack:FindFirstChild("Zoko Control") or Player.Character:FindFirstChild("Zoko Control")
+        if wand then wand:Destroy() end
         ControlFrame.Visible = false
     end
 end)
 
--- نظام الطيران الفعلي (Real Fly System)
-local FlyLoop, bg, bv
+-- نظام الطيران الذكي (يتحكم بالسيارات أو الشخصية)
+local FlyLoop, bg, bv, FlyNoclipLoop
 BtnFly.MouseButton1Click:Connect(function()
     Features.Fly = not Features.Fly
     BtnFly.Text = Features.Fly and "Fly (Shift/Q/Z): ON" or "Fly (Shift/Q/Z): OFF"
     BtnFly.TextColor3 = Features.Fly and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
     
     local char = Player.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
+    if not char then return end
+
+    -- التحقق إذا اللاعب داخل سيارة
+    local targetPart = char:FindFirstChild("HumanoidRootPart")
+    local humanoid = char:FindFirstChild("Humanoid")
+    local isVehicle = false
+    
+    if humanoid and humanoid.SeatPart then
+        targetPart = humanoid.SeatPart
+        isVehicle = true
+        -- إذا كانت السيارة لها أب أو نموذج رئيسي، نبحث عن القطعة الأساسية
+        if targetPart.Parent and targetPart.Parent:IsA("Model") and targetPart.Parent.PrimaryPart then
+            targetPart = targetPart.Parent.PrimaryPart
+        end
+    end
+
+    if not targetPart then return end
 
     if Features.Fly then
-        char.Humanoid.PlatformStand = true
+        if not isVehicle then char.Humanoid.PlatformStand = true end
         
-        -- إنشاء قوة فيزيائية عشان ما يطيحك الماب
-        bg = Instance.new("BodyGyro", hrp)
+        bg = Instance.new("BodyGyro", targetPart)
         bg.P = 9e4
         bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
-        bg.cframe = hrp.CFrame
+        bg.cframe = targetPart.CFrame
         
-        bv = Instance.new("BodyVelocity", hrp)
+        bv = Instance.new("BodyVelocity", targetPart)
         bv.velocity = Vector3.new(0, 0, 0)
         bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
 
@@ -532,17 +524,62 @@ BtnFly.MouseButton1Click:Connect(function()
             end
         end)
     else
-        char.Humanoid.PlatformStand = false
+        if not isVehicle then char.Humanoid.PlatformStand = false end
         if bg then bg:Destroy() end
         if bv then bv:Destroy() end
         if FlyLoop then FlyLoop:Disconnect() end
+        
+        -- إطفاء اختراق الطيران إذا انطفى الطيران الأساسي
+        if Features.FlyNoclip then
+            Features.FlyNoclip = false
+            BtnFlyNoclip.Text = "Fly Noclip (اختراق أثناء الطيران): OFF"
+            BtnFlyNoclip.TextColor3 = Color3.fromRGB(200, 200, 200)
+            if FlyNoclipLoop then FlyNoclipLoop:Disconnect() end
+        end
     end
 end)
 
--- نظام Noclip المضاد للإرجاع
+-- نظام اختراق الجدران الخاص بالطيران (Fly Noclip)
+BtnFlyNoclip.MouseButton1Click:Connect(function()
+    if not Features.Fly then
+        Notify("خطأ", "يجب تفعيل الطيران (Fly) أولاً لاستخدام هذه الميزة!", Color3.fromRGB(255, 50, 50))
+        return
+    end
+
+    Features.FlyNoclip = not Features.FlyNoclip
+    BtnFlyNoclip.Text = Features.FlyNoclip and "Fly Noclip (اختراق أثناء الطيران): ON" or "Fly Noclip (اختراق أثناء الطيران): OFF"
+    BtnFlyNoclip.TextColor3 = Features.FlyNoclip and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
+
+    if Features.FlyNoclip then
+        FlyNoclipLoop = RunService.Stepped:Connect(function()
+            if Features.Fly and Player.Character then
+                -- نخترق الشخصية
+                for _, part in pairs(Player.Character:GetDescendants()) do
+                    if part:IsA("BasePart") and part.CanCollide then
+                        part.CanCollide = false
+                    end
+                end
+                
+                -- إذا كان في سيارة، نخترق أجزاء السيارة بعد
+                local hum = Player.Character:FindFirstChild("Humanoid")
+                if hum and hum.SeatPart and hum.SeatPart.Parent then
+                    for _, part in pairs(hum.SeatPart.Parent:GetDescendants()) do
+                        if part:IsA("BasePart") and part.CanCollide then
+                            part.CanCollide = false
+                        end
+                    end
+                end
+            end
+        end)
+    else
+        if FlyNoclipLoop then FlyNoclipLoop:Disconnect() end
+    end
+end)
+
+-- نظام Noclip المضاد للإرجاع (العادي، بدون طيران)
 local lastNoclipPos = nil
 local NoclipLoop = RunService.Stepped:Connect(function()
-    if Features.Noclip and Player.Character then
+    if Features.Noclip and not Features.Fly and Player.Character then
         local hrp = Player.Character:FindFirstChild("HumanoidRootPart")
         local hum = Player.Character:FindFirstChild("Humanoid")
         for _, part in pairs(Player.Character:GetDescendants()) do
@@ -561,11 +598,9 @@ local NoclipLoop = RunService.Stepped:Connect(function()
     end
 end)
 
--- نظام القود مود المضاد للطيحة (Anti-Ragdoll Force Stand)
 local RenderLoop = RunService.RenderStepped:Connect(function()
     local char = Player.Character
     if not char then return end
-
     local hum = char:FindFirstChild("Humanoid")
     local hrp = char:FindFirstChild("HumanoidRootPart")
     if not hum then return end
@@ -590,7 +625,6 @@ local RenderLoop = RunService.RenderStepped:Connect(function()
     if Features.CustomJump then hum.UseJumpPower = true hum.JumpPower = Features.JumpValue end
 end)
 
--- نظام Instant Interact
 local InstantInteractLoop
 local function ToggleInstantInteract()
     if Features.InstantInteract then
@@ -641,7 +675,6 @@ local JumpLoop = UIS.JumpRequest:Connect(function()
     end
 end)
 
--- نظام مضاد الـ AFK
 Player.Idled:Connect(function()
     if Features.AntiAFK then
         VirtualUser:CaptureController()
@@ -675,9 +708,6 @@ BtnJump.MouseButton1Click:Connect(function()
 end)
 BoxJump.FocusLost:Connect(function() Features.JumpValue = tonumber(BoxJump.Text) or 100 end)
 
--- ==========================================
--- أزرار الواجهة السفلية (Dev & Restart)
--- ==========================================
 local DevBtn = Instance.new("TextButton")
 DevBtn.Size = UDim2.new(1, 0, 0, 25)
 DevBtn.Position = UDim2.new(0, 0, 1, -45)
@@ -722,6 +752,7 @@ RestartBtn.MouseButton1Click:Connect(function()
     if JumpLoop then JumpLoop:Disconnect() end
     if SpectateLoop then SpectateLoop:Disconnect() end
     if FlyLoop then FlyLoop:Disconnect() end
+    if FlyNoclipLoop then FlyNoclipLoop:Disconnect() end
     if bg then bg:Destroy() end
     if bv then bv:Destroy() end
     
