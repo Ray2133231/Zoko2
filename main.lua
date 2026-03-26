@@ -1,4 +1,4 @@
--- [[ Zoko Hub V16 - Advanced Multi-Target & Smart Car Boost ]]
+-- [[ Zoko Hub V17 - Perfect Multi-Target & Avatar Fix ]]
 
 local Player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -36,7 +36,7 @@ Stroke.Thickness = 2
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.BackgroundTransparency = 1
-Title.Text = "ZOKO HUB V16"
+Title.Text = "ZOKO HUB V17"
 Title.TextColor3 = Color3.fromRGB(0, 212, 255)
 Title.Font = Enum.Font.GothamBlack
 Title.TextSize = 22
@@ -128,8 +128,8 @@ end
 -- ==========================================
 local SelectedTargets = {} 
 local TargetCards = {}     
-local ActiveTarget = nil   -- اللاعب اللي بتطبق عليه الأوامر حالياً
-local SpectatedPlayer = nil -- اللاعب اللي مسوي عليه سبكتيت الحين
+local ActiveTarget = nil   
+local SpectatedPlayer = nil 
 local SpectateLoop = nil
 
 local ControlFrame = Instance.new("Frame")
@@ -138,6 +138,7 @@ ControlFrame.Position = UDim2.new(0.5, 150, 0.5, -150)
 ControlFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 ControlFrame.Visible = false
 ControlFrame.Parent = ScreenGui
+ControlFrame.Active = true -- يمنع الواجهة من سحب التحكم بالكامل
 Instance.new("UICorner", ControlFrame).CornerRadius = UDim.new(0, 12)
 local CStroke = Instance.new("UIStroke", ControlFrame)
 CStroke.Color = Color3.fromRGB(255, 100, 100)
@@ -190,7 +191,6 @@ local BtnCmdBring = CreateControlButton("Bring (سحب)", Color3.fromRGB(255, 20
 local BtnCmdSpec = CreateControlButton("Spectate (مشاهدة)", Color3.fromRGB(100, 255, 100))
 local BtnCmdScare = CreateControlButton("Scare (تخويف)", Color3.fromRGB(200, 100, 255))
 
--- تحديث الإطار الأخضر للاعب المحدد
 local function SetActiveTarget(plr)
     ActiveTarget = plr
     for userId, card in pairs(TargetCards) do
@@ -205,9 +205,7 @@ local function SetActiveTarget(plr)
     end
 end
 
--- إيقاف المشاهدة
 local SpecFrame = Instance.new("Frame")
--- تعريف SpecFrame تم نقله هنا عشان نستخدمه بالدوال
 local function StopSpectating()
     if SpectateLoop then SpectateLoop:Disconnect() SpectateLoop = nil end
     SpectatedPlayer = nil
@@ -231,12 +229,8 @@ local function RemoveTarget(plr)
         end
     end
     
-    -- إذا حذفت اللي مسوي عليه سبكتيت، يوقف السبكتيت
-    if SpectatedPlayer == plr then
-        StopSpectating()
-    end
+    if SpectatedPlayer == plr then StopSpectating() end
     
-    -- إذا حذفت اللاعب المحدد، نحدد شخص ثاني تلقائي
     if ActiveTarget == plr then
         local nextTarget = nil
         for _, p in pairs(SelectedTargets) do nextTarget = p break end
@@ -264,27 +258,25 @@ local function AddTarget(plr)
     SelectedTargets[plr.UserId] = plr
     ControlFrame.Visible = true
 
-    local Card = Instance.new("Frame", TargetsContainer)
+    -- البطاقة الرئيسية (صار الضغط عليها يحدد اللاعب بدون أزرار شفافة تسبب تداخل)
+    local Card = Instance.new("TextButton", TargetsContainer)
     Card.Size = UDim2.new(0, 80, 0, 100)
     Card.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    Card.Text = "" -- زر بدون نص
+    Card.AutoButtonColor = false
     Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 8)
     TargetCards[plr.UserId] = Card
 
-    -- زر شفاف فوق البطاقة عشان تحدد اللاعب
-    local SelectBtn = Instance.new("TextButton", Card)
-    SelectBtn.Size = UDim2.new(1, 0, 1, 0)
-    SelectBtn.BackgroundTransparency = 1
-    SelectBtn.Text = ""
-    SelectBtn.ZIndex = 5
-    SelectBtn.MouseButton1Click:Connect(function() SetActiveTarget(plr) end)
+    Card.MouseButton1Click:Connect(function() SetActiveTarget(plr) end)
 
     local Img = Instance.new("ImageLabel", Card)
-    Img.Size = UDim2.new(0, 50, 0, 50)
-    Img.Position = UDim2.new(0.5, -25, 0, 15)
+    Img.Size = UDim2.new(0, 60, 0, 60)
+    Img.Position = UDim2.new(0.5, -30, 0, 10)
     Img.BackgroundTransparency = 1
     Instance.new("UICorner", Img).CornerRadius = UDim.new(1, 0)
     pcall(function()
-        Img.Image = game.Players:GetUserThumbnailAsync(plr.UserId, Enum.ThumbnailType.AvatarHeadShot, Enum.ThumbnailSize.Size150x150)
+        -- جبنا وضعية الشخصية الكاملة بدال الوجه بس
+        Img.Image = game.Players:GetUserThumbnailAsync(plr.UserId, Enum.ThumbnailType.AvatarBust, Enum.ThumbnailSize.Size150x150)
     end)
 
     local NameLbl = Instance.new("TextLabel", Card)
@@ -304,12 +296,11 @@ local function AddTarget(plr)
     XBtn.Text = "X"
     XBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     XBtn.Font = Enum.Font.GothamBold
-    XBtn.ZIndex = 10 -- عشان ما يتعارض مع زر التحديد
+    XBtn.ZIndex = 10 
     Instance.new("UICorner", XBtn).CornerRadius = UDim.new(0, 6)
 
     XBtn.MouseButton1Click:Connect(function() RemoveTarget(plr) end)
     
-    -- تلقائياً نخليه هو الهدف النشط
     SetActiveTarget(plr)
 end
 
@@ -555,7 +546,8 @@ BtnWand.MouseButton1Click:Connect(function()
     BtnWand.TextColor3 = Features.ControlWand and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
     if Features.ControlWand then
         local currentWand = Instance.new("Tool")
-        currentWand.RequiresHandle = false
+        currentWand.RequiresHandle = false -- عشان ما يخرب الأنيميشن
+        currentWand.CanBeDropped = false
         currentWand.Name = "Zoko Control"
         currentWand.ToolTip = "اضغط على لاعب لإضافته/حذفه من التحكم (الحد 3)"
         currentWand.TextureId = "rbxassetid://100414902"
@@ -807,8 +799,14 @@ BtnInfJump.MouseButton1Click:Connect(function()
 end)
 
 local JumpLoop = UIS.JumpRequest:Connect(function()
+    -- حلينا مشكلة النط أثناء مسك العصا
     if Features.InfJump and Player.Character and Player.Character:FindFirstChildOfClass("Humanoid") then
         Player.Character:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.Jumping)
+    elseif Player.Character and Player.Character:FindFirstChildOfClass("Humanoid") then
+        local floor = Player.Character:FindFirstChildOfClass("Humanoid").FloorMaterial
+        if floor ~= Enum.Material.Air then
+            Player.Character:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.Jumping)
+        end
     end
 end)
 
