@@ -773,7 +773,7 @@ end)
 BtnFlyNoclip.MouseButton1Click:Connect(function()
     if not Features.Fly then return end
     Features.FlyNoclip = not Features.FlyNoclip
-    BtnFlyNoclip.Text = Features.FlyNoclip and "Fly Noclip (اختراق): ON" or "Fly Noclip (اختراق): OFF"
+    BtnFlyNoclip.Text = Features.FlyNoclip and "Fly Noclip: ON" or "Fly Noclip: OFF"
     BtnFlyNoclip.TextColor3 = Features.FlyNoclip and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
     
     if Features.FlyNoclip then
