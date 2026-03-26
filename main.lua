@@ -901,7 +901,7 @@ end)
 local InstantInteractLoop
 BtnInstant.MouseButton1Click:Connect(function()
     Features.InstantInteract = not Features.InstantInteract
-    BtnInstant.Text = Features.InstantInteract and "Instant Interact (No Hold): ON" or "Instant Interact (No Hold): OFF"
+    BtnInstant.Text = Features.InstantInteract and "Instant Interact: ON" or "Instant Interact: OFF"
     BtnInstant.TextColor3 = Features.InstantInteract and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
     if Features.InstantInteract then
         InstantInteractLoop = RunService.Heartbeat:Connect(function()
@@ -918,7 +918,7 @@ end)
 
 BtnNoclip.MouseButton1Click:Connect(function()
     Features.Noclip = not Features.Noclip
-    BtnNoclip.Text = Features.Noclip and "Noclip (Anti-Rubberband): ON" or "Noclip (Anti-Rubberband): OFF"
+    BtnNoclip.Text = Features.Noclip and "Noclip: ON" or "Noclip: OFF"
     BtnNoclip.TextColor3 = Features.Noclip and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
     
     if not Features.Noclip and Player.Character then
@@ -928,7 +928,7 @@ end)
 
 BtnSuperHit.MouseButton1Click:Connect(function()
     Features.SuperHit = not Features.SuperHit
-    BtnSuperHit.Text = Features.SuperHit and "Super Hero Hit (Fling): ON" or "Super Hero Hit (Fling): OFF"
+    BtnSuperHit.Text = Features.SuperHit and "Super Hero Hit: ON" or "Super Hero Hit: OFF"
     BtnSuperHit.TextColor3 = Features.SuperHit and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
 end)
 
