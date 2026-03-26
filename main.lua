@@ -1,4 +1,4 @@
--- [[ Zoko Hub V7.1 - Perfected Fling & Instant Interact ]]
+-- [[ Zoko Hub V7.2 - Perfected Fling, Instant Interact & UI Fixes ]]
 
 local Player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -31,7 +31,7 @@ Stroke.Thickness = 2
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.BackgroundTransparency = 1
-Title.Text = "ZOKO HUB V7.1"
+Title.Text = "ZOKO HUB V7.2"
 Title.TextColor3 = Color3.fromRGB(0, 212, 255)
 Title.Font = Enum.Font.GothamBlack
 Title.TextSize = 22
@@ -63,8 +63,9 @@ local function MakeDraggable(gui)
 end
 MakeDraggable(MainFrame)
 
+-- رفعنا السكرول شوي عشان نعطي مساحة لزر الريستارت
 local ScrollFrame = Instance.new("ScrollingFrame")
-ScrollFrame.Size = UDim2.new(1, 0, 1, -85)
+ScrollFrame.Size = UDim2.new(1, 0, 1, -110) 
 ScrollFrame.Position = UDim2.new(0, 0, 0, 45)
 ScrollFrame.BackgroundTransparency = 1
 ScrollFrame.ScrollBarThickness = 4
@@ -179,7 +180,7 @@ local BtnInstant = CreateButton("Instant Interact (No Hold): OFF", ScrollFrame)
 local BtnSuperHit = CreateButton("Super Hero Hit (Fling): OFF", ScrollFrame)
 local BtnInfJump = CreateButton("Infinite Jump: OFF", ScrollFrame)
 local BtnAntiAFK = CreateButton("Anti-AFK: ON", ScrollFrame)
-BtnAntiAFK.TextColor3 = Color3.fromRGB(0, 255, 127) -- مفعل تلقائياً
+BtnAntiAFK.TextColor3 = Color3.fromRGB(0, 255, 127)
 
 local BtnSpeed, BoxSpeed = CreateInputRow("Walk Speed: OFF", 50, ScrollFrame)
 local BtnJump, BoxJump = CreateInputRow("Jump Power: OFF", 100, ScrollFrame)
@@ -188,8 +189,8 @@ local BtnJump, BoxJump = CreateInputRow("Jump Power: OFF", 100, ScrollFrame)
 -- الأنظمة الأساسية (Loops)
 -- ==========================================
 
--- نظام Noclip (اختراق الجدران)
-RunService.Stepped:Connect(function()
+-- نظام Noclip
+local NoclipLoop = RunService.Stepped:Connect(function()
     if Features.Noclip and Player.Character then
         for _, part in pairs(Player.Character:GetDescendants()) do
             if part:IsA("BasePart") and part.CanCollide then
@@ -199,14 +200,11 @@ RunService.Stepped:Connect(function()
     end
 end)
 
--- نظام Super Hit المعدل (Fling)
--- يراقب لمس السلاح للاعبين الثانيين ويعطيهم سرعة خيالية تدفهم
+-- نظام Super Hit (Fling)
 local FlingConnections = {}
-
 local function EnableFlingOnTool(tool)
     if not tool or not tool:FindFirstChild("Handle") then return end
     local handle = tool.Handle
-    
     local conn = handle.Touched:Connect(function(hit)
         if Features.SuperHit and hit.Parent and hit.Parent:FindFirstChild("Humanoid") and hit.Parent.Name ~= Player.Name then
             local enemyHRP = hit.Parent:FindFirstChild("HumanoidRootPart")
@@ -227,8 +225,7 @@ Player.CharacterAdded:Connect(function(char)
     end)
 end)
 
--- مراقبة الأدوات الموجودة حالياً
-RunService.Heartbeat:Connect(function()
+local SuperHitLoop = RunService.Heartbeat:Connect(function()
     if Features.SuperHit and Player.Character then
         local tool = Player.Character:FindFirstChildOfClass("Tool")
         if tool and #FlingConnections == 0 then
@@ -239,7 +236,6 @@ RunService.Heartbeat:Connect(function()
         end
     end
 end)
-
 
 local RenderLoop = RunService.RenderStepped:Connect(function()
     local char = Player.Character
@@ -255,7 +251,6 @@ local RenderLoop = RunService.RenderStepped:Connect(function()
             hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
             hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
             hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
-            -- جعل الشخصية ثقيلة جداً لعدم الدفع
             if hrp then hrp.CustomPhysicalProperties = PhysicalProperties.new(100, 0.3, 0.5, 1, 1) end
         end)
     else
@@ -266,7 +261,7 @@ local RenderLoop = RunService.RenderStepped:Connect(function()
     if Features.CustomJump then hum.UseJumpPower = true hum.JumpPower = Features.JumpValue end
 end)
 
--- نظام Instant Interact المعدل (تحديث مستمر لكل شيء)
+-- نظام Instant Interact
 local InstantInteractLoop
 local function ToggleInstantInteract()
     if Features.InstantInteract then
@@ -325,9 +320,7 @@ local JumpLoop = UIS.JumpRequest:Connect(function()
     end
 end)
 
--- ==========================================
 -- نظام مضاد الـ AFK
--- ==========================================
 Player.Idled:Connect(function()
     if Features.AntiAFK then
         VirtualUser:CaptureController()
@@ -361,9 +354,12 @@ BtnJump.MouseButton1Click:Connect(function()
 end)
 BoxJump.FocusLost:Connect(function() Features.JumpValue = tonumber(BoxJump.Text) or 100 end)
 
+-- ==========================================
+-- أزرار الواجهة السفلية (Dev & Restart)
+-- ==========================================
 local DevBtn = Instance.new("TextButton")
 DevBtn.Size = UDim2.new(1, 0, 0, 25)
-DevBtn.Position = UDim2.new(0, 0, 1, -25)
+DevBtn.Position = UDim2.new(0, 0, 1, -45)
 DevBtn.BackgroundTransparency = 1
 DevBtn.RichText = true
 DevBtn.Text = [[Developed by <font color="rgb(0, 212, 255)"><b>Zoko</b></font>]]
@@ -371,6 +367,47 @@ DevBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
 DevBtn.Font = Enum.Font.GothamMedium
 DevBtn.TextSize = 14
 DevBtn.Parent = MainFrame
+
+-- تفعيل زر زوكو عشان ينسخ الرابط
+DevBtn.MouseButton1Click:Connect(function()
+    local site = "http://45.137.98.42:5000/"
+    if setclipboard then
+        setclipboard(site)
+        Notify("Zoko Link Copied!", "تم نسخ الرابط بنجاح!")
+    else
+        Notify("Zoko Site", "الرابط: " .. site)
+    end
+end)
+
+local RestartBtn = Instance.new("TextButton")
+RestartBtn.Size = UDim2.new(1, 0, 0, 20)
+RestartBtn.Position = UDim2.new(0, 0, 1, -22)
+RestartBtn.BackgroundTransparency = 1
+RestartBtn.Text = "RESTART"
+RestartBtn.TextColor3 = Color3.fromRGB(0, 212, 255)
+RestartBtn.Font = Enum.Font.GothamBlack
+RestartBtn.TextSize = 16
+RestartBtn.Parent = MainFrame
+
+local RestartGlow = Instance.new("UIStroke")
+RestartGlow.Color = Color3.fromRGB(0, 212, 255)
+RestartGlow.Transparency = 0.5
+RestartGlow.Thickness = 0.6
+RestartGlow.Parent = RestartBtn
+
+-- تفعيل زر الريستارت
+RestartBtn.MouseButton1Click:Connect(function()
+    if RenderLoop then RenderLoop:Disconnect() end
+    if NoclipLoop then NoclipLoop:Disconnect() end
+    if SuperHitLoop then SuperHitLoop:Disconnect() end
+    if InstantInteractLoop then InstantInteractLoop:Disconnect() end
+    if JumpLoop then JumpLoop:Disconnect() end
+    ScreenGui:Destroy()
+    
+    pcall(function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/Ray2133231/Zoko2/main/main.lua"))()
+    end)
+end)
 
 local OpenBtn = Instance.new("TextButton")
 OpenBtn.Size = UDim2.new(0, 45, 0, 45)
