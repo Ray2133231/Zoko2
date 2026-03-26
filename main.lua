@@ -1,4 +1,4 @@
--- [[ Zoko Hub V20 - Ultimate X-Ray, Cinematic Scare & Plane Fling ]]
+-- [[ Zoko Hub V22 - Smart Speed, Noclip Fix & Position Lock ]]
 
 local Player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -53,7 +53,7 @@ Stroke.Thickness = 2
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.BackgroundTransparency = 1
-Title.Text = "ZOKO HUB V20"
+Title.Text = "ZOKO HUB V22"
 Title.TextColor3 = Color3.fromRGB(0, 212, 255)
 Title.Font = Enum.Font.GothamBlack
 Title.TextSize = 22
@@ -210,11 +210,8 @@ local BtnCmdSpec = CreateControlButton("Spectate (مشاهدة)", Color3.fromRGB
 local BtnCmdScare = CreateControlButton("Scare (تخويف): OFF", Color3.fromRGB(200, 200, 200))
 
 local isScaring = false
-local ScareOriginalPos = nil
-
 local isFlinging = false
 local FlingLoop = nil
-local FlingOriginalPos = nil
 
 -- التحديد المضمون للألوان بالكروت
 local function SetActiveTarget(plr)
@@ -223,10 +220,10 @@ local function SetActiveTarget(plr)
         local stroke = card:FindFirstChild("CardStroke")
         if plr and userId == plr.UserId then
             if stroke then stroke.Color = Color3.fromRGB(0, 255, 127) stroke.Thickness = 2 end
-            card.BackgroundColor3 = Color3.fromRGB(20, 60, 30) -- أخضر غامق جداً عشان يبين
+            card.BackgroundColor3 = Color3.fromRGB(20, 60, 30)
         else
             if stroke then stroke.Color = Color3.fromRGB(100, 100, 100) stroke.Thickness = 1 end
-            card.BackgroundColor3 = Color3.fromRGB(35, 35, 35) -- رصاصي عادي
+            card.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
         end
     end
 end
@@ -287,14 +284,13 @@ local function AddTarget(plr)
     CStroke.Thickness = 1
 
     TargetCards[plr.UserId] = Card
-
     Card.MouseButton1Click:Connect(function() SetActiveTarget(plr) end)
 
     local Img = Instance.new("ImageLabel", Card)
     Img.Size = UDim2.new(0, 60, 0, 60)
     Img.Position = UDim2.new(0.5, -30, 0, 10)
     Img.BackgroundTransparency = 1
-    Img.Active = false -- مهم للضغط
+    Img.Active = false
     Instance.new("UICorner", Img).CornerRadius = UDim.new(1, 0)
     pcall(function() Img.Image = game.Players:GetUserThumbnailAsync(plr.UserId, Enum.ThumbnailType.AvatarBust, Enum.ThumbnailSize.Size150x150) end)
 
@@ -426,7 +422,7 @@ BtnCmdSpec.MouseButton1Click:Connect(function()
     end
 end)
 
--- نظام التطيير الجديد (دوران زي الطيارة حول الهدف)
+-- نظام التطيير الجديد (دوران زي الطيارة حول الهدف - بدون ارجاع المكان)
 BtnCmdFling.MouseButton1Click:Connect(function()
     isFlinging = not isFlinging
     if isFlinging then
@@ -436,17 +432,13 @@ BtnCmdFling.MouseButton1Click:Connect(function()
         
         if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
             local myHRP = Player.Character.HumanoidRootPart
-            FlingOriginalPos = myHRP.CFrame
-            
             FlingLoop = RunService.Heartbeat:Connect(function()
                 local tPlayer = ActiveTarget
                 if tPlayer and tPlayer.Character and tPlayer.Character:FindFirstChild("HumanoidRootPart") then
                     local targetHRP = tPlayer.Character.HumanoidRootPart
-                    -- دوران سريع جداً
                     local angle = tick() * 35 
                     local radius = 1.2
                     myHRP.CFrame = targetHRP.CFrame * CFrame.Angles(0, angle, 0) * CFrame.new(0, 0, -radius)
-                    -- إعطاء قوة دفع وهمية لاصطدام عنيف
                     myHRP.Velocity = Vector3.new(5000, 5000, 5000)
                     myHRP.RotVelocity = Vector3.new(5000, 5000, 5000)
                 end
@@ -461,24 +453,20 @@ BtnCmdFling.MouseButton1Click:Connect(function()
         
         if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
             local myHRP = Player.Character.HumanoidRootPart
+            -- تصفير السرعة عشان ما تكمل طاير وتوقف مكانك بالضبط
             myHRP.Velocity = Vector3.new(0,0,0)
             myHRP.RotVelocity = Vector3.new(0,0,0)
-            if FlingOriginalPos then myHRP.CFrame = FlingOriginalPos end
         end
     end
 end)
 
--- نظام التخويف السينمائي (Scare Sequence)
+-- نظام التخويف السينمائي (بدون ارجاع المكان)
 BtnCmdScare.MouseButton1Click:Connect(function()
     isScaring = not isScaring
     if isScaring then
         BtnCmdScare.Text = "Scare (تخويف): ON"
         BtnCmdScare.TextColor3 = Color3.fromRGB(0, 255, 127)
         Notify("Scare", "بدأ سيناريو التخويف!", Color3.fromRGB(0, 255, 127))
-        
-        if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
-            ScareOriginalPos = Player.Character.HumanoidRootPart.CFrame
-        end
         
         task.spawn(function()
             while isScaring do
@@ -487,24 +475,20 @@ BtnCmdScare.MouseButton1Click:Connect(function()
                     local myHRP = Player.Character.HumanoidRootPart
                     local targetHRP = tPlayer.Character.HumanoidRootPart
                     
-                    myHRP.Anchored = true -- تثبيتك عشان ما تطيح بالفراغ
+                    myHRP.Anchored = true 
                     
-                    -- 1. يسحبك بوجهه يناظرك
                     if not isScaring then break end
                     myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, -2.5) * CFrame.Angles(0, math.pi, 0)
                     task.wait(2)
                     
-                    -- 2. تختفي فجأة
                     if not isScaring then break end
                     myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 200, 0)
                     task.wait(0.5)
                     
-                    -- 3. تطلع وراه عند كتفه
                     if not isScaring then break end
                     myHRP.CFrame = targetHRP.CFrame * CFrame.new(1.5, 0.5, 2) * CFrame.Angles(0, 0, 0)
                     task.wait(1.5)
                     
-                    -- 4. تتنقل بأماكن متفرقة حوله لمدة 6 إلى 8 ثواني
                     local randomDuration = math.random(6, 8)
                     local endTime = tick() + randomDuration
                     while tick() < endTime and isScaring do
@@ -515,7 +499,6 @@ BtnCmdScare.MouseButton1Click:Connect(function()
                         task.wait(0.4)
                     end
                     
-                    -- 5. بوجهه مرة ثانية على طول
                     if not isScaring then break end
                     myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, -2) * CFrame.Angles(0, math.pi, 0)
                     task.wait(1.5)
@@ -524,12 +507,9 @@ BtnCmdScare.MouseButton1Click:Connect(function()
                 end
             end
             
-            -- لما يطفيه يرجعك
+            -- لما يطفيه يوقف بمكانه (بدون ارجاع للمكان القديم)
             if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
                 Player.Character.HumanoidRootPart.Anchored = false
-                if ScareOriginalPos then
-                    Player.Character.HumanoidRootPart.CFrame = ScareOriginalPos
-                end
             end
         end)
     else
@@ -540,13 +520,15 @@ BtnCmdScare.MouseButton1Click:Connect(function()
 end)
 
 -- ==========================================
--- الأزرار الرئيسية والميزات الأساسية
+-- الأزرار الرئيسية وإعدادات السرعة الذكية
 -- ==========================================
 local Features = {
     Fly = false, FlyNoclip = false, GodMode = false, InfJump = false, Noclip = false, 
-    InstantPrompt = false, SuperHit = false, AntiAFK = true, ControlWand = false,
-    CustomSpeed = false, SpeedValue = 50, CustomJump = false, JumpValue = 100, ESP = false
+    InstantPrompt = false, SuperHit = false, AntiAFK = true, ControlWand = false, ESP = false,
+    CustomSpeed = false, WalkSpeed = 100, CarSpeed = 899, FlySpeed = 10, CarFlySpeed = 10, 
+    CustomJump = false, JumpValue = 100
 }
+local CurrentSpeedState = "Walk"
 
 local function CreateButton(text, parent)
     local btn = Instance.new("TextButton")
@@ -598,7 +580,7 @@ local BtnWand = CreateButton("Control Wand (أداة التحكم): OFF", Scroll
 local BtnFly = CreateButton("Fly (Shift/Q/Z): OFF", ScrollFrame)
 local BtnFlyNoclip = CreateButton("Fly Noclip (اختراق): OFF", ScrollFrame)
 BtnFlyNoclip.Visible = false
-local BtnESP = CreateButton("ESP (X-Ray - كشف): OFF", ScrollFrame) -- زر الـ ESP الجديد
+local BtnESP = CreateButton("ESP (X-Ray - كشف): OFF", ScrollFrame)
 local BtnGod = CreateButton("God Mode & No Ragdoll: OFF", ScrollFrame)
 local BtnNoclip = CreateButton("Noclip (Anti-Rubberband): OFF", ScrollFrame)
 local BtnInstant = CreateButton("Instant Interact (No Hold): OFF", ScrollFrame)
@@ -607,14 +589,13 @@ local BtnInfJump = CreateButton("Infinite Jump: OFF", ScrollFrame)
 local BtnAntiAFK = CreateButton("Anti-AFK: ON", ScrollFrame)
 BtnAntiAFK.TextColor3 = Color3.fromRGB(0, 255, 127)
 
-local BtnSpeed, BoxSpeed = CreateInputRow("Walk Speed: OFF", 50, ScrollFrame)
+local BtnSpeed, BoxSpeed = CreateInputRow("Walk Speed: OFF", 100, ScrollFrame)
 local BtnJump, BoxJump = CreateInputRow("Jump Power: OFF", 100, ScrollFrame)
 
 -- ==========================================
 -- الأنظمة (Loops & Functions)
 -- ==========================================
 
--- نظام كشف الأماكن (ESP X-Ray)
 local ESPLoop = nil
 BtnESP.MouseButton1Click:Connect(function()
     Features.ESP = not Features.ESP
@@ -625,7 +606,6 @@ BtnESP.MouseButton1Click:Connect(function()
         ESPLoop = RunService.RenderStepped:Connect(function()
             for _, p in pairs(game.Players:GetPlayers()) do
                 if p ~= Player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                    -- رسم التحديد الأحمر حول الجسم
                     if not p.Character:FindFirstChild("ZokoESP_Highlight") then
                         local hl = Instance.new("Highlight")
                         hl.Name = "ZokoESP_Highlight"
@@ -633,16 +613,15 @@ BtnESP.MouseButton1Click:Connect(function()
                         hl.FillColor = Color3.fromRGB(255, 0, 0)
                         hl.OutlineColor = Color3.fromRGB(255, 0, 0)
                         hl.OutlineTransparency = 0
-                        hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop -- من ورا الجدران
+                        hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
                         hl.Parent = p.Character
                     end
-                    -- رسم الاسم فوق الراس
                     if not p.Character:FindFirstChild("ZokoESP_Name") then
                         local bg = Instance.new("BillboardGui")
                         bg.Name = "ZokoESP_Name"
                         bg.Size = UDim2.new(0, 200, 0, 50)
                         bg.StudsOffset = Vector3.new(0, 3.5, 0)
-                        bg.AlwaysOnTop = true -- من ورا الجدران
+                        bg.AlwaysOnTop = true
                         local txt = Instance.new("TextLabel")
                         txt.Size = UDim2.new(1, 0, 1, 0)
                         txt.BackgroundTransparency = 1
@@ -691,7 +670,7 @@ BtnWand.MouseButton1Click:Connect(function()
         currentWand.RequiresHandle = false
         currentWand.CanBeDropped = false
         currentWand.Name = "Zoko Control"
-        currentWand.ToolTip = "اضغط على لاعب لإضافته/حذفه من التحكم (الحد 3)"
+        currentWand.ToolTip = "اضغط على لاعب لإضافته/حذفه (الحد 3)"
         currentWand.TextureId = "rbxassetid://100414902"
         currentWand.Parent = Player.Backpack
         currentWand.Activated:Connect(function()
@@ -743,8 +722,11 @@ BtnFly.MouseButton1Click:Connect(function()
         FlyLoop = RunService.RenderStepped:Connect(function()
             local cam = workspace.CurrentCamera
             local move = Vector3.new(0,0,0)
-            local speed = 50 
-            if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then speed = 150 end 
+            
+            -- تحديث سرعة الطيران من النظام الذكي
+            local speed = isVehicle and Features.CarFlySpeed or Features.FlySpeed
+            
+            if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then speed = speed * 3 end 
             if UIS:IsKeyDown(Enum.KeyCode.W) then move = move + cam.CFrame.LookVector end
             if UIS:IsKeyDown(Enum.KeyCode.S) then move = move - cam.CFrame.LookVector end
             if UIS:IsKeyDown(Enum.KeyCode.D) then move = move + cam.CFrame.RightVector end
@@ -763,11 +745,22 @@ BtnFly.MouseButton1Click:Connect(function()
         if not isVehicle then char.Humanoid.PlatformStand = false end
         if bg then bg:Destroy() end if bv then bv:Destroy() end
         if FlyLoop then FlyLoop:Disconnect() end
+        
         if Features.FlyNoclip then
             Features.FlyNoclip = false
             BtnFlyNoclip.Text = "Fly Noclip (اختراق): OFF"
             BtnFlyNoclip.TextColor3 = Color3.fromRGB(200, 200, 200)
             if FlyNoclipLoop then FlyNoclipLoop:Disconnect() end
+            
+            -- تصليح: إرجاع صلابة الجسم (CanCollide) عند الإغلاق
+            if Player.Character then
+                for _, part in pairs(Player.Character:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = true end end
+                local hum = Player.Character:FindFirstChild("Humanoid")
+                if hum and hum.SeatPart then
+                    local fullVehicle = GetTopVehicle(hum.SeatPart)
+                    if fullVehicle then for _, part in pairs(fullVehicle:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = true end end end
+                end
+            end
         end
     end
 end)
@@ -777,6 +770,7 @@ BtnFlyNoclip.MouseButton1Click:Connect(function()
     Features.FlyNoclip = not Features.FlyNoclip
     BtnFlyNoclip.Text = Features.FlyNoclip and "Fly Noclip (اختراق): ON" or "Fly Noclip (اختراق): OFF"
     BtnFlyNoclip.TextColor3 = Features.FlyNoclip and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
+    
     if Features.FlyNoclip then
         FlyNoclipLoop = RunService.Stepped:Connect(function()
             if Features.Fly and Player.Character then
@@ -790,6 +784,15 @@ BtnFlyNoclip.MouseButton1Click:Connect(function()
         end)
     else
         if FlyNoclipLoop then FlyNoclipLoop:Disconnect() end
+        -- تصليح: إرجاع صلابة الجسم
+        if Player.Character then
+            for _, part in pairs(Player.Character:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = true end end
+            local hum = Player.Character:FindFirstChild("Humanoid")
+            if hum and hum.SeatPart then
+                local fullVehicle = GetTopVehicle(hum.SeatPart)
+                if fullVehicle then for _, part in pairs(fullVehicle:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = true end end end
+            end
+        end
     end
 end)
 
@@ -807,7 +810,9 @@ local NoclipLoop = RunService.Stepped:Connect(function()
             lastNoclipPos = hrp.Position
             hum:ChangeState(11) 
         end
-    else lastNoclipPos = nil end
+    else 
+        lastNoclipPos = nil 
+    end
 end)
 
 local RenderLoop = RunService.RenderStepped:Connect(function()
@@ -832,26 +837,72 @@ local RenderLoop = RunService.RenderStepped:Connect(function()
     else pcall(function() if hrp then hrp.CustomPhysicalProperties = PhysicalProperties.new(0.7, 0.3, 0.5, 1, 1) end end) end
 
     local isVehicle = hum.SeatPart ~= nil
-    if Features.CustomSpeed then
-        BtnSpeed.Text = (isVehicle and "Car Speed: ON" or "Walk Speed: ON")
-        BtnSpeed.TextColor3 = Color3.fromRGB(0, 255, 127)
-        if isVehicle then
-            local seat = hum.SeatPart
-            if seat:IsA("VehicleSeat") then seat.MaxSpeed = Features.SpeedValue end
-            if UIS:IsKeyDown(Enum.KeyCode.W) then seat.AssemblyLinearVelocity = seat.AssemblyLinearVelocity + (seat.CFrame.LookVector * (Features.SpeedValue / 20)) end
-        else hum.WalkSpeed = Features.SpeedValue end
+    
+    -- نظام السرعة الذكي
+    local newState = "Walk"
+    if Features.Fly then
+        newState = isVehicle and "CarFly" or "Fly"
     else
-        BtnSpeed.Text = (isVehicle and "Car Speed: OFF" or "Walk Speed: OFF")
+        newState = isVehicle and "Car" or "Walk"
+    end
+    
+    -- تغيير النصوص والرقم حسب الحالة
+    if CurrentSpeedState ~= newState then
+        CurrentSpeedState = newState
+        if newState == "Walk" then
+            BtnSpeed.Text = Features.CustomSpeed and "Walk Speed: ON" or "Walk Speed: OFF"
+            BoxSpeed.Text = tostring(Features.WalkSpeed)
+        elseif newState == "Car" then
+            BtnSpeed.Text = Features.CustomSpeed and "Car Speed: ON" or "Car Speed: OFF"
+            BoxSpeed.Text = tostring(Features.CarSpeed)
+        elseif newState == "Fly" then
+            BtnSpeed.Text = Features.CustomSpeed and "Fly Speed: ON" or "Fly Speed: OFF"
+            BoxSpeed.Text = tostring(Features.FlySpeed)
+        elseif newState == "CarFly" then
+            BtnSpeed.Text = Features.CustomSpeed and "Car Fly Speed: ON" or "Car Fly Speed: OFF"
+            BoxSpeed.Text = tostring(Features.CarFlySpeed)
+        end
+    end
+
+    -- تطبيق السرعة الفعلي
+    if Features.CustomSpeed then
+        BtnSpeed.TextColor3 = Color3.fromRGB(0, 255, 127)
+        if newState == "Car" then
+            local seat = hum.SeatPart
+            if seat:IsA("VehicleSeat") then seat.MaxSpeed = Features.CarSpeed end
+            if UIS:IsKeyDown(Enum.KeyCode.W) then seat.AssemblyLinearVelocity = seat.AssemblyLinearVelocity + (seat.CFrame.LookVector * (Features.CarSpeed / 20)) end
+        elseif newState == "Walk" then
+            hum.WalkSpeed = Features.WalkSpeed
+        end
+    else
         BtnSpeed.TextColor3 = Color3.fromRGB(200, 200, 200)
     end
+    
     if Features.CustomJump then hum.UseJumpPower = true hum.JumpPower = Features.JumpValue end
 end)
 
+-- تحديث زر السرعة ليتناسب مع الاسم الجديد
 BtnSpeed.MouseButton1Click:Connect(function()
     Features.CustomSpeed = not Features.CustomSpeed
-    if not Features.CustomSpeed and Player.Character and Player.Character:FindFirstChild("Humanoid") then Player.Character.Humanoid.WalkSpeed = 16 end
+    if Features.CustomSpeed then
+        BtnSpeed.Text = string.gsub(BtnSpeed.Text, "OFF", "ON")
+    else
+        BtnSpeed.Text = string.gsub(BtnSpeed.Text, "ON", "OFF")
+        if Player.Character and Player.Character:FindFirstChild("Humanoid") then 
+            Player.Character.Humanoid.WalkSpeed = 16 
+        end
+    end
 end)
-BoxSpeed.FocusLost:Connect(function() Features.SpeedValue = tonumber(BoxSpeed.Text) or 50 end)
+
+-- تحديث صندوق الإدخال ليحفظ كل سرعة لحالها
+BoxSpeed.FocusLost:Connect(function() 
+    local val = tonumber(BoxSpeed.Text) or 50
+    if CurrentSpeedState == "Walk" then Features.WalkSpeed = val
+    elseif CurrentSpeedState == "Car" then Features.CarSpeed = val
+    elseif CurrentSpeedState == "Fly" then Features.FlySpeed = val
+    elseif CurrentSpeedState == "CarFly" then Features.CarFlySpeed = val
+    end
+end)
 
 local InstantInteractLoop
 BtnInstant.MouseButton1Click:Connect(function()
@@ -875,6 +926,10 @@ BtnNoclip.MouseButton1Click:Connect(function()
     Features.Noclip = not Features.Noclip
     BtnNoclip.Text = Features.Noclip and "Noclip (Anti-Rubberband): ON" or "Noclip (Anti-Rubberband): OFF"
     BtnNoclip.TextColor3 = Features.Noclip and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
+    
+    if not Features.Noclip and Player.Character then
+        for _, part in pairs(Player.Character:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = true end end
+    end
 end)
 
 BtnSuperHit.MouseButton1Click:Connect(function()
