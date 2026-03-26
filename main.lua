@@ -1,4 +1,4 @@
--- [[ Zoko Hub V15 - Multi-Target & Smart Car Boost ]]
+-- [[ Zoko Hub V16 - Advanced Multi-Target & Smart Car Boost ]]
 
 local Player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -36,7 +36,7 @@ Stroke.Thickness = 2
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.BackgroundTransparency = 1
-Title.Text = "ZOKO HUB V15"
+Title.Text = "ZOKO HUB V16"
 Title.TextColor3 = Color3.fromRGB(0, 212, 255)
 Title.Font = Enum.Font.GothamBlack
 Title.TextSize = 22
@@ -126,8 +126,10 @@ end
 -- ==========================================
 -- لوحة التحكم باللاعبين والمشاهدة (Multi-Target Control)
 -- ==========================================
-local SelectedTargets = {} -- تخزين اللاعبين المحددين
-local TargetCards = {}     -- تخزين الـ UI حقت كل لاعب
+local SelectedTargets = {} 
+local TargetCards = {}     
+local ActiveTarget = nil   -- اللاعب اللي بتطبق عليه الأوامر حالياً
+local SpectatedPlayer = nil -- اللاعب اللي مسوي عليه سبكتيت الحين
 local SpectateLoop = nil
 
 local ControlFrame = Instance.new("Frame")
@@ -182,11 +184,43 @@ local function CreateControlButton(text, color)
     return btn
 end
 
-local BtnCmdFling = CreateControlButton("Fling (تطيير الكل)", Color3.fromRGB(255, 80, 80))
-local BtnCmdTp = CreateControlButton("Teleport (انتقال للأول)", Color3.fromRGB(80, 200, 255))
-local BtnCmdBring = CreateControlButton("Bring (سحب الكل)", Color3.fromRGB(255, 200, 80))
-local BtnCmdSpec = CreateControlButton("Spectate (مشاهدة الأول)", Color3.fromRGB(100, 255, 100))
-local BtnCmdScare = CreateControlButton("Scare (تخويف الكل)", Color3.fromRGB(200, 100, 255))
+local BtnCmdFling = CreateControlButton("Fling (تطيير)", Color3.fromRGB(255, 80, 80))
+local BtnCmdTp = CreateControlButton("Teleport (انتقال)", Color3.fromRGB(80, 200, 255))
+local BtnCmdBring = CreateControlButton("Bring (سحب)", Color3.fromRGB(255, 200, 80))
+local BtnCmdSpec = CreateControlButton("Spectate (مشاهدة)", Color3.fromRGB(100, 255, 100))
+local BtnCmdScare = CreateControlButton("Scare (تخويف)", Color3.fromRGB(200, 100, 255))
+
+-- تحديث الإطار الأخضر للاعب المحدد
+local function SetActiveTarget(plr)
+    ActiveTarget = plr
+    for userId, card in pairs(TargetCards) do
+        local stroke = card:FindFirstChild("UIStroke") or Instance.new("UIStroke", card)
+        if plr and userId == plr.UserId then
+            stroke.Color = Color3.fromRGB(0, 255, 127)
+            stroke.Thickness = 2
+        else
+            stroke.Color = Color3.fromRGB(100, 100, 100)
+            stroke.Thickness = 1
+        end
+    end
+end
+
+-- إيقاف المشاهدة
+local SpecFrame = Instance.new("Frame")
+-- تعريف SpecFrame تم نقله هنا عشان نستخدمه بالدوال
+local function StopSpectating()
+    if SpectateLoop then SpectateLoop:Disconnect() SpectateLoop = nil end
+    SpectatedPlayer = nil
+    task.wait(0.1)
+    local char = Player.Character
+    if char and char:FindFirstChild("Humanoid") then
+        workspace.CurrentCamera.CameraSubject = char.Humanoid
+        workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
+    end
+    SpecFrame.Visible = false
+    MainFrame.Visible = true
+    ControlFrame.Visible = true
+end
 
 local function RemoveTarget(plr)
     if SelectedTargets[plr.UserId] then
@@ -195,6 +229,18 @@ local function RemoveTarget(plr)
             TargetCards[plr.UserId]:Destroy()
             TargetCards[plr.UserId] = nil
         end
+    end
+    
+    -- إذا حذفت اللي مسوي عليه سبكتيت، يوقف السبكتيت
+    if SpectatedPlayer == plr then
+        StopSpectating()
+    end
+    
+    -- إذا حذفت اللاعب المحدد، نحدد شخص ثاني تلقائي
+    if ActiveTarget == plr then
+        local nextTarget = nil
+        for _, p in pairs(SelectedTargets) do nextTarget = p break end
+        SetActiveTarget(nextTarget)
     end
     
     local count = 0
@@ -224,6 +270,14 @@ local function AddTarget(plr)
     Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 8)
     TargetCards[plr.UserId] = Card
 
+    -- زر شفاف فوق البطاقة عشان تحدد اللاعب
+    local SelectBtn = Instance.new("TextButton", Card)
+    SelectBtn.Size = UDim2.new(1, 0, 1, 0)
+    SelectBtn.BackgroundTransparency = 1
+    SelectBtn.Text = ""
+    SelectBtn.ZIndex = 5
+    SelectBtn.MouseButton1Click:Connect(function() SetActiveTarget(plr) end)
+
     local Img = Instance.new("ImageLabel", Card)
     Img.Size = UDim2.new(0, 50, 0, 50)
     Img.Position = UDim2.new(0.5, -25, 0, 15)
@@ -250,9 +304,13 @@ local function AddTarget(plr)
     XBtn.Text = "X"
     XBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     XBtn.Font = Enum.Font.GothamBold
+    XBtn.ZIndex = 10 -- عشان ما يتعارض مع زر التحديد
     Instance.new("UICorner", XBtn).CornerRadius = UDim.new(0, 6)
 
     XBtn.MouseButton1Click:Connect(function() RemoveTarget(plr) end)
+    
+    -- تلقائياً نخليه هو الهدف النشط
+    SetActiveTarget(plr)
 end
 
 local BtnCloseControl = Instance.new("TextButton", ControlFrame)
@@ -268,15 +326,9 @@ BtnCloseControl.MouseButton1Click:Connect(function()
     ControlFrame.Visible = false 
 end)
 
-local function GetFirstTarget()
-    for _, plr in pairs(SelectedTargets) do return plr end
-    return nil
-end
-
 -- ==========================================
--- لوحة المشاهدة
+-- إعدادات واجهة السبكتيت
 -- ==========================================
-local SpecFrame = Instance.new("Frame")
 SpecFrame.Size = UDim2.new(0, 200, 0, 70)
 SpecFrame.Position = UDim2.new(0.5, -100, 0.9, -80)
 SpecFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
@@ -310,23 +362,11 @@ SpecClose.Font = Enum.Font.GothamBold
 SpecClose.TextSize = 16
 Instance.new("UICorner", SpecClose).CornerRadius = UDim.new(0, 6)
 
-local function StopSpectating()
-    if SpectateLoop then SpectateLoop:Disconnect() SpectateLoop = nil end
-    task.wait(0.1)
-    local char = Player.Character
-    if char and char:FindFirstChild("Humanoid") then
-        workspace.CurrentCamera.CameraSubject = char.Humanoid
-        workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
-    end
-    SpecFrame.Visible = false
-    MainFrame.Visible = true
-    ControlFrame.Visible = true
-end
 SpecClose.MouseButton1Click:Connect(StopSpectating)
 
--- أوامر لوحة التحكم (Multi-Target Execution)
+-- أوامر لوحة التحكم (تنفذ على ActiveTarget فقط)
 BtnCmdTp.MouseButton1Click:Connect(function()
-    local tPlayer = GetFirstTarget()
+    local tPlayer = ActiveTarget
     if tPlayer and tPlayer.Character and tPlayer.Character:FindFirstChild("HumanoidRootPart") and Player.Character then
         Player.Character.HumanoidRootPart.CFrame = tPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, -3)
         Notify("Teleport", "تم الانتقال إلى " .. tPlayer.DisplayName)
@@ -334,58 +374,57 @@ BtnCmdTp.MouseButton1Click:Connect(function()
 end)
 
 BtnCmdFling.MouseButton1Click:Connect(function()
-    for _, tPlayer in pairs(SelectedTargets) do
-        if tPlayer.Character and tPlayer.Character:FindFirstChild("HumanoidRootPart") and Player.Character then
-            local targetHRP = tPlayer.Character.HumanoidRootPart
-            local myHRP = Player.Character:FindFirstChild("HumanoidRootPart")
-            if myHRP then
-                local startPos = myHRP.CFrame
-                Notify("Fling", "جاري تطيير " .. tPlayer.DisplayName .. "...", Color3.fromRGB(255, 50, 50))
-                local bv = Instance.new("BodyVelocity")
-                bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-                bv.Velocity = Vector3.new(0, 50, 0)
-                bv.Parent = myHRP
-                local bav = Instance.new("BodyAngularVelocity")
-                bav.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
-                bav.AngularVelocity = Vector3.new(10000, 10000, 10000)
-                bav.Parent = myHRP
-                local spinLoop = RunService.Heartbeat:Connect(function() myHRP.CFrame = targetHRP.CFrame end)
-                task.wait(1.5)
-                if spinLoop then spinLoop:Disconnect() end
-                if bv then bv:Destroy() end
-                if bav then bav:Destroy() end
-                myHRP.Velocity = Vector3.new(0,0,0)
-                myHRP.RotVelocity = Vector3.new(0,0,0)
-                myHRP.CFrame = startPos
-            end
+    local tPlayer = ActiveTarget
+    if tPlayer and tPlayer.Character and tPlayer.Character:FindFirstChild("HumanoidRootPart") and Player.Character then
+        local targetHRP = tPlayer.Character.HumanoidRootPart
+        local myHRP = Player.Character:FindFirstChild("HumanoidRootPart")
+        if myHRP then
+            local startPos = myHRP.CFrame
+            Notify("Fling", "جاري تطيير " .. tPlayer.DisplayName .. "...", Color3.fromRGB(255, 50, 50))
+            local bv = Instance.new("BodyVelocity")
+            bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+            bv.Velocity = Vector3.new(0, 50, 0)
+            bv.Parent = myHRP
+            local bav = Instance.new("BodyAngularVelocity")
+            bav.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+            bav.AngularVelocity = Vector3.new(10000, 10000, 10000)
+            bav.Parent = myHRP
+            local spinLoop = RunService.Heartbeat:Connect(function() myHRP.CFrame = targetHRP.CFrame end)
+            task.wait(1.5)
+            if spinLoop then spinLoop:Disconnect() end
+            if bv then bv:Destroy() end
+            if bav then bav:Destroy() end
+            myHRP.Velocity = Vector3.new(0,0,0)
+            myHRP.RotVelocity = Vector3.new(0,0,0)
+            myHRP.CFrame = startPos
         end
     end
 end)
 
 BtnCmdBring.MouseButton1Click:Connect(function()
-    for _, tPlayer in pairs(SelectedTargets) do
-        if tPlayer.Character and tPlayer.Character:FindFirstChild("HumanoidRootPart") and Player.Character then
-            local targetHRP = tPlayer.Character.HumanoidRootPart
-            local myHRP = Player.Character:FindFirstChild("HumanoidRootPart")
-            if myHRP then
-                local myPos = myHRP.CFrame
-                Notify("Bring", "محاولة سحب " .. tPlayer.DisplayName .. "...", Color3.fromRGB(255, 200, 80))
-                local spinLoop = RunService.Heartbeat:Connect(function()
-                    myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, 1)
-                    myHRP.Velocity = (myPos.Position - targetHRP.Position).Unit * 100
-                end)
-                task.wait(1.5)
-                if spinLoop then spinLoop:Disconnect() end
-                myHRP.Velocity = Vector3.new(0,0,0)
-                myHRP.CFrame = myPos
-            end
+    local tPlayer = ActiveTarget
+    if tPlayer and tPlayer.Character and tPlayer.Character:FindFirstChild("HumanoidRootPart") and Player.Character then
+        local targetHRP = tPlayer.Character.HumanoidRootPart
+        local myHRP = Player.Character:FindFirstChild("HumanoidRootPart")
+        if myHRP then
+            local myPos = myHRP.CFrame
+            Notify("Bring", "محاولة سحب " .. tPlayer.DisplayName .. "...", Color3.fromRGB(255, 200, 80))
+            local spinLoop = RunService.Heartbeat:Connect(function()
+                myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, 1)
+                myHRP.Velocity = (myPos.Position - targetHRP.Position).Unit * 100
+            end)
+            task.wait(1.5)
+            if spinLoop then spinLoop:Disconnect() end
+            myHRP.Velocity = Vector3.new(0,0,0)
+            myHRP.CFrame = myPos
         end
     end
 end)
 
 BtnCmdSpec.MouseButton1Click:Connect(function()
-    local tPlayer = GetFirstTarget()
+    local tPlayer = ActiveTarget
     if tPlayer and tPlayer.Character and tPlayer.Character:FindFirstChild("Humanoid") then
+        SpectatedPlayer = tPlayer
         workspace.CurrentCamera.CameraSubject = tPlayer.Character.Humanoid
         MainFrame.Visible = false
         ControlFrame.Visible = false
@@ -407,22 +446,21 @@ BtnCmdSpec.MouseButton1Click:Connect(function()
 end)
 
 BtnCmdScare.MouseButton1Click:Connect(function()
-    for _, tPlayer in pairs(SelectedTargets) do
-        if tPlayer.Character and tPlayer.Character:FindFirstChild("HumanoidRootPart") and Player.Character then
-            local myHRP = Player.Character:FindFirstChild("HumanoidRootPart")
-            local targetHRP = tPlayer.Character.HumanoidRootPart
-            if myHRP then
-                local originalPos = myHRP.CFrame
-                Notify("Scare", "جاري تخويف " .. tPlayer.DisplayName .. "!", Color3.fromRGB(200, 100, 255))
-                local scareLoop = RunService.Heartbeat:Connect(function()
-                   if targetHRP then myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, -3) * CFrame.Angles(0, math.pi, 0) end
-                end)
-                task.wait(2.5)
-                scareLoop:Disconnect()
-                myHRP.CFrame = CFrame.new(0, 99999, 0)
-                task.wait(0.5)
-                myHRP.CFrame = originalPos
-            end
+    local tPlayer = ActiveTarget
+    if tPlayer and tPlayer.Character and tPlayer.Character:FindFirstChild("HumanoidRootPart") and Player.Character then
+        local myHRP = Player.Character:FindFirstChild("HumanoidRootPart")
+        local targetHRP = tPlayer.Character.HumanoidRootPart
+        if myHRP then
+            local originalPos = myHRP.CFrame
+            Notify("Scare", "جاري تخويف " .. tPlayer.DisplayName .. "!", Color3.fromRGB(200, 100, 255))
+            local scareLoop = RunService.Heartbeat:Connect(function()
+               if targetHRP then myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, -3) * CFrame.Angles(0, math.pi, 0) end
+            end)
+            task.wait(2.5)
+            scareLoop:Disconnect()
+            myHRP.CFrame = CFrame.new(0, 99999, 0)
+            task.wait(0.5)
+            myHRP.CFrame = originalPos
         end
     end
 end)
@@ -702,7 +740,6 @@ local RenderLoop = RunService.RenderStepped:Connect(function()
         if isVehicle then
             local seat = hum.SeatPart
             if seat:IsA("VehicleSeat") then seat.MaxSpeed = Features.SpeedValue end
-            -- دفع إضافي للسيارة لما تضغط W
             if UIS:IsKeyDown(Enum.KeyCode.W) then
                 seat.AssemblyLinearVelocity = seat.AssemblyLinearVelocity + (seat.CFrame.LookVector * (Features.SpeedValue / 20))
             end
