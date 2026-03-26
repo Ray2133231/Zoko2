@@ -1,4 +1,4 @@
--- [[ Zoko Hub V23 - Fixed Vehicle Velocity & Dynamic UI ]]
+-- [[ Zoko Hub V24 - Spectate Image Fix & Smart Speed ]]
 
 local Player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -53,7 +53,7 @@ Stroke.Thickness = 2
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.BackgroundTransparency = 1
-Title.Text = "ZOKO HUB V23"
+Title.Text = "ZOKO HUB V24"
 Title.TextColor3 = Color3.fromRGB(0, 212, 255)
 Title.Font = Enum.Font.GothamBlack
 Title.TextSize = 22
@@ -292,7 +292,12 @@ local function AddTarget(plr)
     Img.BackgroundTransparency = 1
     Img.Active = false
     Instance.new("UICorner", Img).CornerRadius = UDim.new(1, 0)
-    pcall(function() Img.Image = game.Players:GetUserThumbnailAsync(plr.UserId, Enum.ThumbnailType.AvatarBust, Enum.ThumbnailSize.Size150x150) end)
+    
+    -- جلب الصورة بشكل آمن للكروت
+    pcall(function() 
+        local imgContent, isReady = game.Players:GetUserThumbnailAsync(plr.UserId, Enum.ThumbnailType.AvatarBust, Enum.ThumbnailSize.Size150x150)
+        Img.Image = imgContent 
+    end)
 
     local NameLbl = Instance.new("TextLabel", Card)
     NameLbl.Size = UDim2.new(1, -4, 0, 20)
@@ -409,7 +414,12 @@ BtnCmdSpec.MouseButton1Click:Connect(function()
         ControlFrame.Visible = false
         SpecFrame.Visible = true
         SpecName.Text = tPlayer.DisplayName
-        pcall(function() SpecImage.Image = game.Players:GetUserThumbnailAsync(tPlayer.UserId, Enum.ThumbnailType.AvatarHeadShot, Enum.ThumbnailSize.Size150x150) end)
+        
+        -- التصليح هنا: سحب الصورة بنفس طريقة الكروت عشان تضمن إنها تطلع 100٪
+        pcall(function() 
+            local imgContent, isReady = game.Players:GetUserThumbnailAsync(tPlayer.UserId, Enum.ThumbnailType.AvatarBust, Enum.ThumbnailSize.Size150x150)
+            SpecImage.Image = imgContent
+        end)
         
         if SpectateLoop then SpectateLoop:Disconnect() end
         SpectateLoop = RunService.RenderStepped:Connect(function()
@@ -590,7 +600,6 @@ BtnAntiAFK.TextColor3 = Color3.fromRGB(0, 255, 127)
 local BtnSpeed, BoxSpeed = CreateInputRow("Walk Speed: OFF", 100, ScrollFrame)
 local BtnJump, BoxJump = CreateInputRow("Jump Power: OFF", 100, ScrollFrame)
 
--- دالة مخصصة عشان تحدث الاسم والرقم بدون تعليق
 local function UpdateSpeedDisplay()
     local prefix = ""
     local val = 50
@@ -855,7 +864,6 @@ local RenderLoop = RunService.RenderStepped:Connect(function()
 
     local isVehicle = hum.SeatPart ~= nil
     
-    -- نظام السرعة الذكي
     local newState = "Walk"
     if Features.Fly then
         newState = isVehicle and "CarFly" or "Fly"
@@ -863,20 +871,17 @@ local RenderLoop = RunService.RenderStepped:Connect(function()
         newState = isVehicle and "Car" or "Walk"
     end
     
-    -- تحديث النصوص بشكل فوري ومضمون
     if CurrentSpeedState ~= newState then
         CurrentSpeedState = newState
         UpdateSpeedDisplay()
     end
 
-    -- تطبيق السرعة الفعلي وتصليح تسارع السيارة
     if Features.CustomSpeed then
         BtnSpeed.TextColor3 = Color3.fromRGB(0, 255, 127)
         if newState == "Car" then
             local seat = hum.SeatPart
             if seat and seat:IsA("VehicleSeat") then
                 seat.MaxSpeed = Features.CarSpeed
-                -- استخدام إتجاه السيارة بدون زيادة متراكمة للسرعة
                 local vel = seat.AssemblyLinearVelocity
                 if UIS:IsKeyDown(Enum.KeyCode.W) then
                     local dir = seat.CFrame.LookVector * Features.CarSpeed
@@ -896,7 +901,6 @@ local RenderLoop = RunService.RenderStepped:Connect(function()
     if Features.CustomJump then hum.UseJumpPower = true hum.JumpPower = Features.JumpValue end
 end)
 
--- تحديث زر السرعة
 BtnSpeed.MouseButton1Click:Connect(function()
     Features.CustomSpeed = not Features.CustomSpeed
     UpdateSpeedDisplay()
@@ -906,7 +910,6 @@ BtnSpeed.MouseButton1Click:Connect(function()
     end
 end)
 
--- تحديث صندوق الإدخال ليحفظ كل سرعة لحالها
 BoxSpeed.FocusLost:Connect(function() 
     local val = tonumber(BoxSpeed.Text) or 50
     if CurrentSpeedState == "Walk" then Features.WalkSpeed = val
@@ -914,7 +917,7 @@ BoxSpeed.FocusLost:Connect(function()
     elseif CurrentSpeedState == "Fly" then Features.FlySpeed = val
     elseif CurrentSpeedState == "CarFly" then Features.CarFlySpeed = val
     end
-    UpdateSpeedDisplay() -- يضمن إن الرقم يتحدث بالشاشة بشكل صحيح
+    UpdateSpeedDisplay()
 end)
 
 local InstantInteractLoop
