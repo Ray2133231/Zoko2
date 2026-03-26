@@ -1,4 +1,4 @@
--- [[ Zoko Hub V18 - Ultimate Control & Scare Toggle ]]
+-- [[ Zoko Hub V19 - Dynamic Targets & Safe Toggles ]]
 
 local Player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -31,7 +31,7 @@ local function CleanupWands()
         end
     end)
 end
-CleanupWands() -- تنظيف عند بداية التشغيل
+CleanupWands()
 
 -- ==========================================
 -- الواجهة الرئيسية
@@ -53,7 +53,7 @@ Stroke.Thickness = 2
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.BackgroundTransparency = 1
-Title.Text = "ZOKO HUB V18"
+Title.Text = "ZOKO HUB V19"
 Title.TextColor3 = Color3.fromRGB(0, 212, 255)
 Title.Font = Enum.Font.GothamBlack
 Title.TextSize = 22
@@ -175,7 +175,6 @@ TargetsContainer.Size = UDim2.new(1, 0, 0, 100)
 TargetsContainer.Position = UDim2.new(0, 0, 0, 30)
 TargetsContainer.BackgroundTransparency = 1
 
--- ترتيب ثابت من اليسار عشان ما تتلخبط البطاقات
 local TPadding = Instance.new("UIPadding", TargetsContainer)
 TPadding.PaddingLeft = UDim.new(0, 8)
 local TListLayout = Instance.new("UIListLayout", TargetsContainer)
@@ -204,27 +203,34 @@ local function CreateControlButton(text, color)
     return btn
 end
 
--- إزالة كلمة "الكل" من الأزرار
-local BtnCmdFling = CreateControlButton("Fling (تطيير)", Color3.fromRGB(255, 80, 80))
+-- أزرار الأوامر بالألوان المطلوبة
+local BtnCmdFling = CreateControlButton("Fling (تطيير): OFF", Color3.fromRGB(200, 200, 200))
 local BtnCmdTp = CreateControlButton("Teleport (انتقال)", Color3.fromRGB(80, 200, 255))
 local BtnCmdBring = CreateControlButton("Bring (سحب)", Color3.fromRGB(255, 200, 80))
 local BtnCmdSpec = CreateControlButton("Spectate (مشاهدة)", Color3.fromRGB(100, 255, 100))
+local BtnCmdScare = CreateControlButton("Scare (تخويف): OFF", Color3.fromRGB(200, 200, 200))
 
--- زر التخويف سويناه متغير الحالة
 local isScaring = false
 local ScareLoop = nil
-local BtnCmdScare = CreateControlButton("Scare (تخويف): OFF", Color3.fromRGB(200, 200, 200))
+local ScareOriginalPos = nil
+
+local isFlinging = false
+local FlingLoop = nil
+local FlingBV, FlingBAV
+local FlingOriginalPos = nil
 
 local function SetActiveTarget(plr)
     ActiveTarget = plr
     for userId, card in pairs(TargetCards) do
-        local stroke = card:FindFirstChild("UIStroke") or Instance.new("UIStroke", card)
-        if plr and userId == plr.UserId then
-            stroke.Color = Color3.fromRGB(0, 255, 127)
-            stroke.Thickness = 2
-        else
-            stroke.Color = Color3.fromRGB(100, 100, 100)
-            stroke.Thickness = 1
+        local stroke = card:FindFirstChild("CardStroke")
+        if stroke then
+            if plr and userId == plr.UserId then
+                stroke.Color = Color3.fromRGB(0, 255, 127) -- أخضر عند التحديد
+                stroke.Thickness = 2
+            else
+                stroke.Color = Color3.fromRGB(100, 100, 100) -- رصاصي إذا مو محدد
+                stroke.Thickness = 1
+            end
         end
     end
 end
@@ -289,6 +295,12 @@ local function AddTarget(plr)
     Card.AutoButtonColor = false
     Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 8)
     TargetCards[plr.UserId] = Card
+    
+    -- إطار البطاقة (مهم عشان نغير لونه بشكل مضمون)
+    local CStroke = Instance.new("UIStroke", Card)
+    CStroke.Name = "CardStroke"
+    CStroke.Color = Color3.fromRGB(100, 100, 100)
+    CStroke.Thickness = 1
 
     Card.MouseButton1Click:Connect(function() SetActiveTarget(plr) end)
 
@@ -377,40 +389,14 @@ Instance.new("UICorner", SpecClose).CornerRadius = UDim.new(0, 6)
 
 SpecClose.MouseButton1Click:Connect(StopSpectating)
 
+-- ==========================================
 -- أوامر لوحة التحكم
+-- ==========================================
 BtnCmdTp.MouseButton1Click:Connect(function()
     local tPlayer = ActiveTarget
     if tPlayer and tPlayer.Character and tPlayer.Character:FindFirstChild("HumanoidRootPart") and Player.Character then
         Player.Character.HumanoidRootPart.CFrame = tPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, -3)
         Notify("Teleport", "تم الانتقال إلى " .. tPlayer.DisplayName)
-    end
-end)
-
-BtnCmdFling.MouseButton1Click:Connect(function()
-    local tPlayer = ActiveTarget
-    if tPlayer and tPlayer.Character and tPlayer.Character:FindFirstChild("HumanoidRootPart") and Player.Character then
-        local targetHRP = tPlayer.Character.HumanoidRootPart
-        local myHRP = Player.Character:FindFirstChild("HumanoidRootPart")
-        if myHRP then
-            local startPos = myHRP.CFrame
-            Notify("Fling", "جاري تطيير " .. tPlayer.DisplayName .. "...", Color3.fromRGB(255, 50, 50))
-            local bv = Instance.new("BodyVelocity")
-            bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-            bv.Velocity = Vector3.new(0, 50, 0)
-            bv.Parent = myHRP
-            local bav = Instance.new("BodyAngularVelocity")
-            bav.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
-            bav.AngularVelocity = Vector3.new(10000, 10000, 10000)
-            bav.Parent = myHRP
-            local spinLoop = RunService.Heartbeat:Connect(function() myHRP.CFrame = targetHRP.CFrame end)
-            task.wait(1.5)
-            if spinLoop then spinLoop:Disconnect() end
-            if bv then bv:Destroy() end
-            if bav then bav:Destroy() end
-            myHRP.Velocity = Vector3.new(0,0,0)
-            myHRP.RotVelocity = Vector3.new(0,0,0)
-            myHRP.CFrame = startPos
-        end
     end
 end)
 
@@ -458,6 +444,54 @@ BtnCmdSpec.MouseButton1Click:Connect(function()
     end
 end)
 
+-- نظام التطيير المستمر (ON/OFF)
+BtnCmdFling.MouseButton1Click:Connect(function()
+    isFlinging = not isFlinging
+    if isFlinging then
+        BtnCmdFling.Text = "Fling (تطيير): ON"
+        BtnCmdFling.TextColor3 = Color3.fromRGB(0, 255, 127)
+        Notify("Fling", "تم تشغيل التطيير المستمر!", Color3.fromRGB(0, 255, 127))
+        
+        if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+            local myHRP = Player.Character.HumanoidRootPart
+            FlingOriginalPos = myHRP.CFrame
+            
+            FlingBV = Instance.new("BodyVelocity")
+            FlingBV.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+            FlingBV.Velocity = Vector3.new(0, 50, 0)
+            FlingBV.Parent = myHRP
+            
+            FlingBAV = Instance.new("BodyAngularVelocity")
+            FlingBAV.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+            FlingBAV.AngularVelocity = Vector3.new(10000, 10000, 10000)
+            FlingBAV.Parent = myHRP
+            
+            -- اللوب ياخذ ActiveTarget دايركت، يعني لو غيرت الشخص بيروح له فوراً
+            FlingLoop = RunService.Heartbeat:Connect(function()
+                local tPlayer = ActiveTarget
+                if tPlayer and tPlayer.Character and tPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    myHRP.CFrame = tPlayer.Character.HumanoidRootPart.CFrame
+                end
+            end)
+        end
+    else
+        BtnCmdFling.Text = "Fling (تطيير): OFF"
+        BtnCmdFling.TextColor3 = Color3.fromRGB(200, 200, 200)
+        Notify("Fling", "تم إيقاف التطيير.", Color3.fromRGB(200, 200, 200))
+        
+        if FlingLoop then FlingLoop:Disconnect() FlingLoop = nil end
+        if FlingBV then FlingBV:Destroy() FlingBV = nil end
+        if FlingBAV then FlingBAV:Destroy() FlingBAV = nil end
+        
+        if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+            local myHRP = Player.Character.HumanoidRootPart
+            myHRP.Velocity = Vector3.new(0,0,0)
+            myHRP.RotVelocity = Vector3.new(0,0,0)
+            if FlingOriginalPos then myHRP.CFrame = FlingOriginalPos end
+        end
+    end
+end)
+
 -- نظام التخويف المستمر (ON/OFF) والشقلبة
 BtnCmdScare.MouseButton1Click:Connect(function()
     isScaring = not isScaring
@@ -466,12 +500,15 @@ BtnCmdScare.MouseButton1Click:Connect(function()
         BtnCmdScare.TextColor3 = Color3.fromRGB(0, 255, 127)
         Notify("Scare", "تم تشغيل التخويف المستمر!", Color3.fromRGB(0, 255, 127))
         
+        if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+            ScareOriginalPos = Player.Character.HumanoidRootPart.CFrame
+        end
+        
         ScareLoop = RunService.Heartbeat:Connect(function()
             local tPlayer = ActiveTarget
             if tPlayer and tPlayer.Character and tPlayer.Character:FindFirstChild("HumanoidRootPart") and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
                 local myHRP = Player.Character.HumanoidRootPart
                 local targetHRP = tPlayer.Character.HumanoidRootPart
-                -- شقلبة سريعة ومستمرة قدام وجه اللاعب
                 myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, -2.5) * CFrame.Angles(math.rad(tick() * 1500), math.rad(tick() * 2000), 0)
             end
         end)
@@ -480,6 +517,10 @@ BtnCmdScare.MouseButton1Click:Connect(function()
         BtnCmdScare.TextColor3 = Color3.fromRGB(200, 200, 200)
         if ScareLoop then ScareLoop:Disconnect() ScareLoop = nil end
         Notify("Scare", "تم إيقاف التخويف.", Color3.fromRGB(200, 200, 200))
+        
+        if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") and ScareOriginalPos then
+            Player.Character.HumanoidRootPart.CFrame = ScareOriginalPos
+        end
     end
 end)
 
@@ -572,7 +613,7 @@ BtnWand.MouseButton1Click:Connect(function()
     BtnWand.Text = Features.ControlWand and "Control Wand (أداة التحكم): ON" or "Control Wand (أداة التحكم): OFF"
     BtnWand.TextColor3 = Features.ControlWand and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
     
-    CleanupWands() -- دايم ينظف عشان ما يتكرر
+    CleanupWands() 
     
     if Features.ControlWand then
         local currentWand = Instance.new("Tool")
@@ -593,6 +634,11 @@ BtnWand.MouseButton1Click:Connect(function()
                 end
             end
         end)
+        
+        -- إرجاع اللوحة والأشخاص إذا كانوا محفوظين
+        local count = 0
+        for _ in pairs(SelectedTargets) do count = count + 1 end
+        if count > 0 then ControlFrame.Visible = true end
     else
         ControlFrame.Visible = false
     end
@@ -726,7 +772,6 @@ local NoclipLoop = RunService.Stepped:Connect(function()
     end
 end)
 
--- نظام تعديل سرعة اللاعب والسيارة (الذكي)
 local RenderLoop = RunService.RenderStepped:Connect(function()
     local char = Player.Character
     if not char then return end
@@ -750,7 +795,6 @@ local RenderLoop = RunService.RenderStepped:Connect(function()
         pcall(function() if hrp then hrp.CustomPhysicalProperties = PhysicalProperties.new(0.7, 0.3, 0.5, 1, 1) end end)
     end
 
-    -- منطق السرعة للسيارة واللاعب
     local isVehicle = hum.SeatPart ~= nil
     
     if Features.CustomSpeed then
@@ -826,7 +870,6 @@ BtnInfJump.MouseButton1Click:Connect(function()
     BtnInfJump.TextColor3 = Features.InfJump and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
 end)
 
--- إصلاح النط بشكل جذري (حتى لو الواجهة مفتوحة)
 local JumpLoop = UIS.JumpRequest:Connect(function()
     if Features.InfJump and Player.Character and Player.Character:FindFirstChildOfClass("Humanoid") then
         Player.Character:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.Jumping)
@@ -901,7 +944,7 @@ RestartGlow.Thickness = 0.6
 RestartGlow.Parent = RestartBtn
 
 RestartBtn.MouseButton1Click:Connect(function()
-    CleanupWands() -- تأكيد تنظيف العصا قبل ما يرست
+    CleanupWands()
     if RenderLoop then RenderLoop:Disconnect() end
     if NoclipLoop then NoclipLoop:Disconnect() end
     if InstantInteractLoop then InstantInteractLoop:Disconnect() end
@@ -910,6 +953,7 @@ RestartBtn.MouseButton1Click:Connect(function()
     if FlyLoop then FlyLoop:Disconnect() end
     if FlyNoclipLoop then FlyNoclipLoop:Disconnect() end
     if ScareLoop then ScareLoop:Disconnect() end
+    if FlingLoop then FlingLoop:Disconnect() end
     if bg then bg:Destroy() end
     if bv then bv:Destroy() end
     
