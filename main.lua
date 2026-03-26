@@ -16,9 +16,7 @@ ScreenGui.Parent = Player:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 _G.ZokoUI = ScreenGui
 
--- ==========================================
--- نظام تنظيف العصا (يمنع التكرار)
--- ==========================================
+
 local function CleanupWands()
     pcall(function()
         for _, v in pairs(Player.Backpack:GetChildren()) do
@@ -33,9 +31,7 @@ local function CleanupWands()
 end
 CleanupWands()
 
--- ==========================================
--- الواجهة الرئيسية
--- ==========================================
+
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 0, 0, 0)
 MainFrame.Position = UDim2.new(0.5, -135, 0.5, -200)
@@ -140,9 +136,7 @@ local function Notify(titleText, descText, color)
     NotifFrame:Destroy()
 end
 
--- ==========================================
--- لوحة التحكم باللاعبين والمشاهدة (Multi-Target Control)
--- ==========================================
+
 local SelectedTargets = {} 
 local TargetCards = {}     
 local ActiveTarget = nil   
@@ -203,7 +197,6 @@ local function CreateControlButton(text, color)
     return btn
 end
 
--- أزرار الأوامر بالألوان المطلوبة
 local BtnCmdFling = CreateControlButton("Fling (تطيير): OFF", Color3.fromRGB(200, 200, 200))
 local BtnCmdTp = CreateControlButton("Teleport (انتقال)", Color3.fromRGB(80, 200, 255))
 local BtnCmdBring = CreateControlButton("Bring (سحب)", Color3.fromRGB(255, 200, 80))
@@ -296,7 +289,6 @@ local function AddTarget(plr)
     Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 8)
     TargetCards[plr.UserId] = Card
     
-    -- إطار البطاقة (مهم عشان نغير لونه بشكل مضمون)
     local CStroke = Instance.new("UIStroke", Card)
     CStroke.Name = "CardStroke"
     CStroke.Color = Color3.fromRGB(100, 100, 100)
@@ -351,9 +343,7 @@ BtnCloseControl.MouseButton1Click:Connect(function()
     ControlFrame.Visible = false 
 end)
 
--- ==========================================
--- إعدادات واجهة السبكتيت
--- ==========================================
+
 SpecFrame.Size = UDim2.new(0, 200, 0, 70)
 SpecFrame.Position = UDim2.new(0.5, -100, 0.9, -80)
 SpecFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
@@ -389,9 +379,7 @@ Instance.new("UICorner", SpecClose).CornerRadius = UDim.new(0, 6)
 
 SpecClose.MouseButton1Click:Connect(StopSpectating)
 
--- ==========================================
--- أوامر لوحة التحكم
--- ==========================================
+
 BtnCmdTp.MouseButton1Click:Connect(function()
     local tPlayer = ActiveTarget
     if tPlayer and tPlayer.Character and tPlayer.Character:FindFirstChild("HumanoidRootPart") and Player.Character then
@@ -444,7 +432,7 @@ BtnCmdSpec.MouseButton1Click:Connect(function()
     end
 end)
 
--- نظام التطيير المستمر (ON/OFF)
+
 BtnCmdFling.MouseButton1Click:Connect(function()
     isFlinging = not isFlinging
     if isFlinging then
@@ -466,7 +454,6 @@ BtnCmdFling.MouseButton1Click:Connect(function()
             FlingBAV.AngularVelocity = Vector3.new(10000, 10000, 10000)
             FlingBAV.Parent = myHRP
             
-            -- اللوب ياخذ ActiveTarget دايركت، يعني لو غيرت الشخص بيروح له فوراً
             FlingLoop = RunService.Heartbeat:Connect(function()
                 local tPlayer = ActiveTarget
                 if tPlayer and tPlayer.Character and tPlayer.Character:FindFirstChild("HumanoidRootPart") then
@@ -492,7 +479,6 @@ BtnCmdFling.MouseButton1Click:Connect(function()
     end
 end)
 
--- نظام التخويف المستمر (ON/OFF) والشقلبة
 BtnCmdScare.MouseButton1Click:Connect(function()
     isScaring = not isScaring
     if isScaring then
@@ -524,9 +510,7 @@ BtnCmdScare.MouseButton1Click:Connect(function()
     end
 end)
 
--- ==========================================
--- الأزرار الرئيسية والميزات الأساسية
--- ==========================================
+
 local Features = {
     Fly = false, FlyNoclip = false, GodMode = false, InfJump = false, Noclip = false, 
     InstantPrompt = false, SuperHit = false, AntiAFK = true, ControlWand = false,
@@ -594,9 +578,7 @@ BtnAntiAFK.TextColor3 = Color3.fromRGB(0, 255, 127)
 local BtnSpeed, BoxSpeed = CreateInputRow("Walk Speed: OFF", 50, ScrollFrame)
 local BtnJump, BoxJump = CreateInputRow("Jump Power: OFF", 100, ScrollFrame)
 
--- ==========================================
--- الأنظمة (Loops & Functions)
--- ==========================================
+
 
 local function GetTopVehicle(seatPart)
     local topModel = seatPart
@@ -635,7 +617,6 @@ BtnWand.MouseButton1Click:Connect(function()
             end
         end)
         
-        -- إرجاع اللوحة والأشخاص إذا كانوا محفوظين
         local count = 0
         for _ in pairs(SelectedTargets) do count = count + 1 end
         if count > 0 then ControlFrame.Visible = true end
@@ -644,7 +625,6 @@ BtnWand.MouseButton1Click:Connect(function()
     end
 end)
 
--- نظام الطيران للسيارات والشخصيات
 local FlyLoop, bg, bv, FlyNoclipLoop
 BtnFly.MouseButton1Click:Connect(function()
     Features.Fly = not Features.Fly
