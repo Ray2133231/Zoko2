@@ -1,4 +1,4 @@
--- [[ Zoko Hub V8 - The Controller Edition (Fly, Control Wand, Spectate) ]]
+-- [[ Zoko Hub V9 - The Scare Edition (Fixes + Jump Scare) ]]
 
 local Player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -36,7 +36,7 @@ Stroke.Thickness = 2
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.BackgroundTransparency = 1
-Title.Text = "ZOKO HUB V8"
+Title.Text = "ZOKO HUB V9"
 Title.TextColor3 = Color3.fromRGB(0, 212, 255)
 Title.Font = Enum.Font.GothamBlack
 Title.TextSize = 22
@@ -131,7 +131,7 @@ local SpectateLoop = nil
 
 -- لوحة التحكم المنبثقة
 local ControlFrame = Instance.new("Frame")
-ControlFrame.Size = UDim2.new(0, 250, 0, 300)
+ControlFrame.Size = UDim2.new(0, 250, 0, 350)
 ControlFrame.Position = UDim2.new(0.5, 150, 0.5, -150)
 ControlFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 ControlFrame.Visible = false
@@ -179,8 +179,9 @@ end
 
 local BtnCmdFling = CreateControlButton("Fling (تطيير)", UDim2.new(0.1, 0, 0, 145), Color3.fromRGB(255, 80, 80))
 local BtnCmdTp = CreateControlButton("Teleport (انتقال)", UDim2.new(0.1, 0, 0, 180), Color3.fromRGB(80, 200, 255))
-local BtnCmdBring = CreateControlButton("Bring (سحب فيزيائي)", UDim2.new(0.1, 0, 0, 215), Color3.fromRGB(255, 200, 80))
+local BtnCmdBring = CreateControlButton("Bring (سحب)", UDim2.new(0.1, 0, 0, 215), Color3.fromRGB(255, 200, 80))
 local BtnCmdSpec = CreateControlButton("Spectate (مشاهدة)", UDim2.new(0.1, 0, 0, 250), Color3.fromRGB(100, 255, 100))
+local BtnCmdScare = CreateControlButton("Scare (تخويف)", UDim2.new(0.1, 0, 0, 285), Color3.fromRGB(200, 100, 255))
 
 local BtnCloseControl = Instance.new("TextButton", ControlFrame)
 BtnCloseControl.Size = UDim2.new(0, 25, 0, 25)
@@ -192,7 +193,7 @@ BtnCloseControl.Font = Enum.Font.GothamBold
 BtnCloseControl.TextSize = 18
 BtnCloseControl.MouseButton1Click:Connect(function() ControlFrame.Visible = false end)
 
--- لوحة المشاهدة (Spectate UI) - تحت في النص
+-- لوحة المشاهدة (Spectate UI)
 local SpecFrame = Instance.new("Frame")
 SpecFrame.Size = UDim2.new(0, 200, 0, 70)
 SpecFrame.Position = UDim2.new(0.5, -100, 0.9, -80)
@@ -220,14 +221,13 @@ SpecName.TextXAlignment = Enum.TextXAlignment.Left
 local SpecClose = Instance.new("TextButton", SpecFrame)
 SpecClose.Size = UDim2.new(0, 30, 0, 30)
 SpecClose.Position = UDim2.new(1, -40, 0.5, -15)
-SpecClose.BackgroundColor3 = Color3.fromRGB(100, 100, 100) -- رصاصي
+SpecClose.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
 SpecClose.Text = "X"
 SpecClose.TextColor3 = Color3.fromRGB(255, 255, 255)
 SpecClose.Font = Enum.Font.GothamBold
 SpecClose.TextSize = 16
 Instance.new("UICorner", SpecClose).CornerRadius = UDim.new(0, 6)
 
--- أنيميشن زر الإغلاق في المشاهدة
 SpecClose.MouseEnter:Connect(function()
     TweenService:Create(SpecClose, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255, 50, 50), Size = UDim2.new(0, 34, 0, 34), Position = UDim2.new(1, -42, 0.5, -17)}):Play()
 end)
@@ -237,7 +237,10 @@ end)
 
 local function StopSpectating()
     if SpectateLoop then SpectateLoop:Disconnect() SpectateLoop = nil end
-    workspace.CurrentCamera.CameraSubject = Player.Character:WaitForChild("Humanoid")
+    local char = Player.Character
+    if char and char:FindFirstChild("Humanoid") then
+        workspace.CurrentCamera.CameraSubject = char.Humanoid
+    end
     SpecFrame.Visible = false
     MainFrame.Visible = true
     ControlFrame.Visible = true
@@ -270,40 +273,52 @@ BtnCmdFling.MouseButton1Click:Connect(function()
         local myHRP = Player.Character:FindFirstChild("HumanoidRootPart")
         if myHRP then
             local startPos = myHRP.CFrame
-            local spinLoop
             Notify("Fling", "جاري تطيير " .. TargetPlayer.DisplayName .. "...", Color3.fromRGB(255, 50, 50))
             
-            spinLoop = RunService.Heartbeat:Connect(function()
+            -- تغيير طريقة الفلينق لتكون أكثر استقراراً
+            local bv = Instance.new("BodyVelocity")
+            bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+            bv.Velocity = Vector3.new(0, 50, 0)
+            bv.Parent = myHRP
+
+            local bav = Instance.new("BodyAngularVelocity")
+            bav.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+            bav.AngularVelocity = Vector3.new(10000, 10000, 10000)
+            bav.Parent = myHRP
+
+            local spinLoop = RunService.Heartbeat:Connect(function()
                 myHRP.CFrame = targetHRP.CFrame
-                myHRP.Velocity = Vector3.new(0, 50, 0)
-                myHRP.RotVelocity = Vector3.new(10000, 10000, 10000) -- دوران خارق لضربه
             end)
             
-            task.wait(1.5) -- يطيره لمدة ثانية ونص
+            task.wait(1.5)
+            
             if spinLoop then spinLoop:Disconnect() end
+            if bv then bv:Destroy() end
+            if bav then bav:Destroy() end
+            
             myHRP.Velocity = Vector3.new(0,0,0)
             myHRP.RotVelocity = Vector3.new(0,0,0)
-            myHRP.CFrame = startPos -- يرجعك لمكانك
+            myHRP.CFrame = startPos
         end
     end
 end)
 
 BtnCmdBring.MouseButton1Click:Connect(function()
-    -- السحب الفيزيائي (يطيره لجهتك بقوة)
+    -- محاولة السحب (العديد من الألعاب تمنع نقل لاعبين آخرين، لذلك نحاول دفعه)
     if TargetPlayer and TargetPlayer.Character and TargetPlayer.Character:FindFirstChild("HumanoidRootPart") and Player.Character then
         local targetHRP = TargetPlayer.Character.HumanoidRootPart
         local myHRP = Player.Character:FindFirstChild("HumanoidRootPart")
         if myHRP then
             local myPos = myHRP.CFrame
-            local spinLoop
             Notify("Bring", "محاولة سحب " .. TargetPlayer.DisplayName .. " لك...", Color3.fromRGB(255, 200, 80))
             
-            spinLoop = RunService.Heartbeat:Connect(function()
-                myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, -1, 0)
-                myHRP.Velocity = (myPos.Position - targetHRP.Position).Unit * 150 + Vector3.new(0, 50, 0)
+            local spinLoop = RunService.Heartbeat:Connect(function()
+                -- الدوران حوله ودفعه نحوك
+                myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, 1)
+                myHRP.Velocity = (myPos.Position - targetHRP.Position).Unit * 100
             end)
             
-            task.wait(1) 
+            task.wait(1.5)
             if spinLoop then spinLoop:Disconnect() end
             myHRP.Velocity = Vector3.new(0,0,0)
             myHRP.CFrame = myPos
@@ -319,7 +334,6 @@ BtnCmdSpec.MouseButton1Click:Connect(function()
         SpecFrame.Visible = true
         Notify("Spectate", "أنت الآن تشاهد " .. TargetPlayer.DisplayName)
         
-        -- تأكد أنه يكمل مشاهدة لو الشخص رسبن
         if SpectateLoop then SpectateLoop:Disconnect() end
         SpectateLoop = RunService.RenderStepped:Connect(function()
             if TargetPlayer and TargetPlayer.Character and TargetPlayer.Character:FindFirstChild("Humanoid") then
@@ -329,6 +343,34 @@ BtnCmdSpec.MouseButton1Click:Connect(function()
                 Notify("Spectate", "اللاعب مات أو طلع من اللعبة.", Color3.fromRGB(255, 50, 50))
             end
         end)
+    end
+end)
+
+BtnCmdScare.MouseButton1Click:Connect(function()
+    if TargetPlayer and TargetPlayer.Character and TargetPlayer.Character:FindFirstChild("HumanoidRootPart") and Player.Character then
+        local myHRP = Player.Character:FindFirstChild("HumanoidRootPart")
+        local targetHRP = TargetPlayer.Character.HumanoidRootPart
+        
+        if myHRP then
+            local originalPos = myHRP.CFrame
+            Notify("Scare", "جاري تخويف " .. TargetPlayer.DisplayName .. "!", Color3.fromRGB(200, 100, 255))
+            
+            -- 1. الظهور أمامه لمدة 3 ثواني
+            local scareLoop = RunService.Heartbeat:Connect(function()
+               if targetHRP then
+                   myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, -3) * CFrame.Angles(0, math.pi, 0) -- مواجه له
+               end
+            end)
+            task.wait(3)
+            scareLoop:Disconnect()
+            
+            -- 2. الاختفاء لمدة 3 ثواني (ننقلك لمكان بعيد)
+            myHRP.CFrame = CFrame.new(0, 99999, 0)
+            task.wait(3)
+            
+            -- 3. العودة لمكانك
+            myHRP.CFrame = originalPos
+        end
     end
 end)
 
@@ -417,7 +459,7 @@ BtnWand.MouseButton1Click:Connect(function()
         currentWand.RequiresHandle = false
         currentWand.Name = "Zoko Control"
         currentWand.ToolTip = "اضغط على لاعب لفتح لوحة التحكم"
-        currentWand.TextureId = "rbxassetid://100414902" -- أيقونة علم/صولجان
+        currentWand.TextureId = "rbxassetid://100414902"
         currentWand.Parent = Player.Backpack
         
         currentWand.Activated:Connect(function()
@@ -464,8 +506,8 @@ BtnFly.MouseButton1Click:Connect(function()
             if UIS:IsKeyDown(Enum.KeyCode.S) then move = move - cam.CFrame.LookVector end
             if UIS:IsKeyDown(Enum.KeyCode.D) then move = move + cam.CFrame.RightVector end
             if UIS:IsKeyDown(Enum.KeyCode.A) then move = move - cam.CFrame.RightVector end
-            if UIS:IsKeyDown(Enum.KeyCode.Q) then move = move + Vector3.new(0,1,0) end -- Q فوق
-            if UIS:IsKeyDown(Enum.KeyCode.Z) then move = move - Vector3.new(0,1,0) end -- Z تحت
+            if UIS:IsKeyDown(Enum.KeyCode.Q) then move = move + Vector3.new(0,1,0) end 
+            if UIS:IsKeyDown(Enum.KeyCode.Z) then move = move - Vector3.new(0,1,0) end 
             
             hrp.Velocity = Vector3.new(0,0,0)
             hrp.CFrame = hrp.CFrame + (move * speed)
@@ -495,41 +537,6 @@ local NoclipLoop = RunService.Stepped:Connect(function()
         end
     else
         lastNoclipPos = nil
-    end
-end)
-
--- نظام Super Hit (Fling)
-local FlingConnections = {}
-local function EnableFlingOnTool(tool)
-    if not tool or not tool:FindFirstChild("Handle") then return end
-    local handle = tool.Handle
-    local conn = handle.Touched:Connect(function(hit)
-        if Features.SuperHit and hit.Parent and hit.Parent:FindFirstChild("Humanoid") and hit.Parent.Name ~= Player.Name then
-            local enemyHRP = hit.Parent:FindFirstChild("HumanoidRootPart")
-            if enemyHRP then
-                enemyHRP.Velocity = Vector3.new(0, 500, 0) + (enemyHRP.Position - handle.Position).Unit * 5000
-                enemyHRP.RotVelocity = Vector3.new(9999, 9999, 9999)
-            end
-        end
-    end)
-    table.insert(FlingConnections, conn)
-end
-
-Player.CharacterAdded:Connect(function(char)
-    char.ChildAdded:Connect(function(child)
-        if child:IsA("Tool") and Features.SuperHit then EnableFlingOnTool(child) end
-    end)
-end)
-
-local SuperHitLoop = RunService.Heartbeat:Connect(function()
-    if Features.SuperHit and Player.Character then
-        local tool = Player.Character:FindFirstChildOfClass("Tool")
-        if tool and #FlingConnections == 0 then
-            EnableFlingOnTool(tool)
-        elseif not tool and #FlingConnections > 0 then
-             for _, conn in pairs(FlingConnections) do conn:Disconnect() end
-             FlingConnections = {}
-        end
     end
 end)
 
@@ -596,10 +603,10 @@ BtnNoclip.MouseButton1Click:Connect(function()
 end)
 
 BtnSuperHit.MouseButton1Click:Connect(function()
+    -- This button left here to not break UI logic, but Fling is now in wand.
     Features.SuperHit = not Features.SuperHit
     BtnSuperHit.Text = Features.SuperHit and "Super Hero Hit (Fling): ON" or "Super Hero Hit (Fling): OFF"
     BtnSuperHit.TextColor3 = Features.SuperHit and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
-    if Features.SuperHit then Notify("Super Hit Activated", "امسك أي سلاح واضرب اللاعبين عشان يطيرون!", Color3.fromRGB(255, 100, 100)) end
 end)
 
 BtnInfJump.MouseButton1Click:Connect(function()
@@ -691,7 +698,6 @@ RestartGlow.Parent = RestartBtn
 RestartBtn.MouseButton1Click:Connect(function()
     if RenderLoop then RenderLoop:Disconnect() end
     if NoclipLoop then NoclipLoop:Disconnect() end
-    if SuperHitLoop then SuperHitLoop:Disconnect() end
     if InstantInteractLoop then InstantInteractLoop:Disconnect() end
     if JumpLoop then JumpLoop:Disconnect() end
     if SpectateLoop then SpectateLoop:Disconnect() end
