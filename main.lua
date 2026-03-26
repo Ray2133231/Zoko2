@@ -1,4 +1,4 @@
--- [[ Zoko Hub V22 - Smart Speed, Noclip Fix & Position Lock ]]
+-- [[ Zoko Hub V23 - Fixed Vehicle Velocity & Dynamic UI ]]
 
 local Player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -53,7 +53,7 @@ Stroke.Thickness = 2
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.BackgroundTransparency = 1
-Title.Text = "ZOKO HUB V22"
+Title.Text = "ZOKO HUB V23"
 Title.TextColor3 = Color3.fromRGB(0, 212, 255)
 Title.Font = Enum.Font.GothamBlack
 Title.TextSize = 22
@@ -422,7 +422,7 @@ BtnCmdSpec.MouseButton1Click:Connect(function()
     end
 end)
 
--- نظام التطيير الجديد (دوران زي الطيارة حول الهدف - بدون ارجاع المكان)
+-- نظام التطيير
 BtnCmdFling.MouseButton1Click:Connect(function()
     isFlinging = not isFlinging
     if isFlinging then
@@ -453,14 +453,13 @@ BtnCmdFling.MouseButton1Click:Connect(function()
         
         if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
             local myHRP = Player.Character.HumanoidRootPart
-            -- تصفير السرعة عشان ما تكمل طاير وتوقف مكانك بالضبط
             myHRP.Velocity = Vector3.new(0,0,0)
             myHRP.RotVelocity = Vector3.new(0,0,0)
         end
     end
 end)
 
--- نظام التخويف السينمائي (بدون ارجاع المكان)
+-- نظام التخويف السينمائي
 BtnCmdScare.MouseButton1Click:Connect(function()
     isScaring = not isScaring
     if isScaring then
@@ -507,7 +506,6 @@ BtnCmdScare.MouseButton1Click:Connect(function()
                 end
             end
             
-            -- لما يطفيه يوقف بمكانه (بدون ارجاع للمكان القديم)
             if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
                 Player.Character.HumanoidRootPart.Anchored = false
             end
@@ -525,7 +523,7 @@ end)
 local Features = {
     Fly = false, FlyNoclip = false, GodMode = false, InfJump = false, Noclip = false, 
     InstantPrompt = false, SuperHit = false, AntiAFK = true, ControlWand = false, ESP = false,
-    CustomSpeed = false, WalkSpeed = 100, CarSpeed = 899, FlySpeed = 10, CarFlySpeed = 10, 
+    CustomSpeed = false, WalkSpeed = 100, CarSpeed = 100, FlySpeed = 100, CarFlySpeed = 100, 
     CustomJump = false, JumpValue = 100
 }
 local CurrentSpeedState = "Walk"
@@ -591,6 +589,28 @@ BtnAntiAFK.TextColor3 = Color3.fromRGB(0, 255, 127)
 
 local BtnSpeed, BoxSpeed = CreateInputRow("Walk Speed: OFF", 100, ScrollFrame)
 local BtnJump, BoxJump = CreateInputRow("Jump Power: OFF", 100, ScrollFrame)
+
+-- دالة مخصصة عشان تحدث الاسم والرقم بدون تعليق
+local function UpdateSpeedDisplay()
+    local prefix = ""
+    local val = 50
+    if CurrentSpeedState == "Walk" then
+        prefix = "Walk Speed"
+        val = Features.WalkSpeed
+    elseif CurrentSpeedState == "Car" then
+        prefix = "Car Speed"
+        val = Features.CarSpeed
+    elseif CurrentSpeedState == "Fly" then
+        prefix = "Fly Speed"
+        val = Features.FlySpeed
+    elseif CurrentSpeedState == "CarFly" then
+        prefix = "Car Fly Speed"
+        val = Features.CarFlySpeed
+    end
+    
+    BtnSpeed.Text = prefix .. (Features.CustomSpeed and ": ON" or ": OFF")
+    BoxSpeed.Text = tostring(val)
+end
 
 -- ==========================================
 -- الأنظمة (Loops & Functions)
@@ -723,7 +743,6 @@ BtnFly.MouseButton1Click:Connect(function()
             local cam = workspace.CurrentCamera
             local move = Vector3.new(0,0,0)
             
-            -- تحديث سرعة الطيران من النظام الذكي
             local speed = isVehicle and Features.CarFlySpeed or Features.FlySpeed
             
             if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then speed = speed * 3 end 
@@ -752,7 +771,6 @@ BtnFly.MouseButton1Click:Connect(function()
             BtnFlyNoclip.TextColor3 = Color3.fromRGB(200, 200, 200)
             if FlyNoclipLoop then FlyNoclipLoop:Disconnect() end
             
-            -- تصليح: إرجاع صلابة الجسم (CanCollide) عند الإغلاق
             if Player.Character then
                 for _, part in pairs(Player.Character:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = true end end
                 local hum = Player.Character:FindFirstChild("Humanoid")
@@ -784,7 +802,6 @@ BtnFlyNoclip.MouseButton1Click:Connect(function()
         end)
     else
         if FlyNoclipLoop then FlyNoclipLoop:Disconnect() end
-        -- تصليح: إرجاع صلابة الجسم
         if Player.Character then
             for _, part in pairs(Player.Character:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = true end end
             local hum = Player.Character:FindFirstChild("Humanoid")
@@ -846,31 +863,29 @@ local RenderLoop = RunService.RenderStepped:Connect(function()
         newState = isVehicle and "Car" or "Walk"
     end
     
-    -- تغيير النصوص والرقم حسب الحالة
+    -- تحديث النصوص بشكل فوري ومضمون
     if CurrentSpeedState ~= newState then
         CurrentSpeedState = newState
-        if newState == "Walk" then
-            BtnSpeed.Text = Features.CustomSpeed and "Walk Speed: ON" or "Walk Speed: OFF"
-            BoxSpeed.Text = tostring(Features.WalkSpeed)
-        elseif newState == "Car" then
-            BtnSpeed.Text = Features.CustomSpeed and "Car Speed: ON" or "Car Speed: OFF"
-            BoxSpeed.Text = tostring(Features.CarSpeed)
-        elseif newState == "Fly" then
-            BtnSpeed.Text = Features.CustomSpeed and "Fly Speed: ON" or "Fly Speed: OFF"
-            BoxSpeed.Text = tostring(Features.FlySpeed)
-        elseif newState == "CarFly" then
-            BtnSpeed.Text = Features.CustomSpeed and "Car Fly Speed: ON" or "Car Fly Speed: OFF"
-            BoxSpeed.Text = tostring(Features.CarFlySpeed)
-        end
+        UpdateSpeedDisplay()
     end
 
-    -- تطبيق السرعة الفعلي
+    -- تطبيق السرعة الفعلي وتصليح تسارع السيارة
     if Features.CustomSpeed then
         BtnSpeed.TextColor3 = Color3.fromRGB(0, 255, 127)
         if newState == "Car" then
             local seat = hum.SeatPart
-            if seat:IsA("VehicleSeat") then seat.MaxSpeed = Features.CarSpeed end
-            if UIS:IsKeyDown(Enum.KeyCode.W) then seat.AssemblyLinearVelocity = seat.AssemblyLinearVelocity + (seat.CFrame.LookVector * (Features.CarSpeed / 20)) end
+            if seat and seat:IsA("VehicleSeat") then
+                seat.MaxSpeed = Features.CarSpeed
+                -- استخدام إتجاه السيارة بدون زيادة متراكمة للسرعة
+                local vel = seat.AssemblyLinearVelocity
+                if UIS:IsKeyDown(Enum.KeyCode.W) then
+                    local dir = seat.CFrame.LookVector * Features.CarSpeed
+                    seat.AssemblyLinearVelocity = Vector3.new(dir.X, vel.Y, dir.Z)
+                elseif UIS:IsKeyDown(Enum.KeyCode.S) then
+                    local dir = seat.CFrame.LookVector * -Features.CarSpeed
+                    seat.AssemblyLinearVelocity = Vector3.new(dir.X, vel.Y, dir.Z)
+                end
+            end
         elseif newState == "Walk" then
             hum.WalkSpeed = Features.WalkSpeed
         end
@@ -881,16 +896,13 @@ local RenderLoop = RunService.RenderStepped:Connect(function()
     if Features.CustomJump then hum.UseJumpPower = true hum.JumpPower = Features.JumpValue end
 end)
 
--- تحديث زر السرعة ليتناسب مع الاسم الجديد
+-- تحديث زر السرعة
 BtnSpeed.MouseButton1Click:Connect(function()
     Features.CustomSpeed = not Features.CustomSpeed
-    if Features.CustomSpeed then
-        BtnSpeed.Text = string.gsub(BtnSpeed.Text, "OFF", "ON")
-    else
-        BtnSpeed.Text = string.gsub(BtnSpeed.Text, "ON", "OFF")
-        if Player.Character and Player.Character:FindFirstChild("Humanoid") then 
-            Player.Character.Humanoid.WalkSpeed = 16 
-        end
+    UpdateSpeedDisplay()
+    
+    if not Features.CustomSpeed and Player.Character and Player.Character:FindFirstChild("Humanoid") then 
+        Player.Character.Humanoid.WalkSpeed = 16 
     end
 end)
 
@@ -902,6 +914,7 @@ BoxSpeed.FocusLost:Connect(function()
     elseif CurrentSpeedState == "Fly" then Features.FlySpeed = val
     elseif CurrentSpeedState == "CarFly" then Features.CarFlySpeed = val
     end
+    UpdateSpeedDisplay() -- يضمن إن الرقم يتحدث بالشاشة بشكل صحيح
 end)
 
 local InstantInteractLoop
