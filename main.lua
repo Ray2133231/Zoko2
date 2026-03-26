@@ -1,10 +1,10 @@
--- [[ Zoko Hub V6 - Server-Side Pseudo Invis & Forced Loop Clone ]]
+-- [[ Zoko Hub V7 - Clean Edition (Noclip, Super Hit, Instant Prompt) ]]
 
 local Player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
-local HttpService = game:GetService("HttpService")
+local VirtualUser = game:GetService("VirtualUser")
 
 if _G.ZokoUI then pcall(function() _G.ZokoUI:Destroy() end) end
 
@@ -31,7 +31,7 @@ Stroke.Thickness = 2
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.BackgroundTransparency = 1
-Title.Text = "ZOKO HUB V6"
+Title.Text = "ZOKO HUB V7"
 Title.TextColor3 = Color3.fromRGB(0, 212, 255)
 Title.Font = Enum.Font.GothamBlack
 Title.TextSize = 22
@@ -64,33 +64,18 @@ end
 MakeDraggable(MainFrame)
 
 local ScrollFrame = Instance.new("ScrollingFrame")
-ScrollFrame.Size = UDim2.new(1, 0, 1, -110)
+ScrollFrame.Size = UDim2.new(1, 0, 1, -85)
 ScrollFrame.Position = UDim2.new(0, 0, 0, 45)
 ScrollFrame.BackgroundTransparency = 1
 ScrollFrame.ScrollBarThickness = 4
 ScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(0, 212, 255)
-ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 550)
+ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 450)
 ScrollFrame.Parent = MainFrame
 
 local ListLayout = Instance.new("UIListLayout")
 ListLayout.Parent = ScrollFrame
 ListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 ListLayout.Padding = UDim.new(0, 8)
-
-local SkinsScroll = Instance.new("ScrollingFrame")
-SkinsScroll.Size = ScrollFrame.Size
-SkinsScroll.Position = ScrollFrame.Position
-SkinsScroll.BackgroundTransparency = 1
-SkinsScroll.ScrollBarThickness = 4
-SkinsScroll.ScrollBarImageColor3 = Color3.fromRGB(0, 212, 255)
-SkinsScroll.CanvasSize = UDim2.new(0, 0, 0, 600)
-SkinsScroll.Visible = false
-SkinsScroll.Parent = MainFrame
-
-local SkinsLayout = Instance.new("UIListLayout")
-SkinsLayout.Parent = SkinsScroll
-SkinsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-SkinsLayout.Padding = UDim.new(0, 8)
 
 local function Notify(titleText, descText, color)
     local useColor = color or Color3.fromRGB(0, 212, 255)
@@ -133,23 +118,16 @@ local function Notify(titleText, descText, color)
     NotifFrame:Destroy()
 end
 
-local SavedSkins = {}
-local SkinToDelete = ""
-local FileName = "ZokoHub_V6_Skins.json"
-local ActiveSkinData = nil -- لحفظ السكن الحالي وإرجاعه تلقائياً
+-- ==========================================
+-- الأزرار الرئيسية والميزات
+-- ==========================================
+local Features = {
+    GodMode = false, InfJump = false, Noclip = false, 
+    InstantPrompt = false, SuperHit = false, AntiAFK = true,
+    CustomSpeed = false, SpeedValue = 50, CustomJump = false, JumpValue = 100
+}
 
-local function SaveDataToFile()
-    if writefile then pcall(function() writefile(FileName, HttpService:JSONEncode(SavedSkins)) end) end
-end
-local function LoadDataFromFile()
-    if readfile and isfile and isfile(FileName) then
-        local s, result = pcall(function() return HttpService:JSONDecode(readfile(FileName)) end)
-        if s and type(result) == "table" then SavedSkins = result end
-    end
-end
-LoadDataFromFile()
-
-local function CreateBaseButton(text, parent, order)
+local function CreateButton(text, parent)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(0.9, 0, 0, 35)
     btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
@@ -158,197 +136,10 @@ local function CreateBaseButton(text, parent, order)
     btn.TextColor3 = Color3.fromRGB(200, 200, 200)
     btn.Font = Enum.Font.GothamBold
     btn.TextSize = 14
-    btn.LayoutOrder = order or 10
     btn.Parent = parent
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
     return btn
 end
-
-local BtnBackToMenu = CreateBaseButton("العودة للقائمة", SkinsScroll, 1)
-BtnBackToMenu.TextColor3 = Color3.fromRGB(255, 100, 100)
-local BtnAddOutfit = CreateBaseButton("اضافة طقم", SkinsScroll, 2)
-BtnAddOutfit.TextColor3 = Color3.fromRGB(0, 255, 127)
-
-local ModalAdd = Instance.new("Frame", MainFrame)
-ModalAdd.Size = UDim2.new(1, 0, 1, 0)
-ModalAdd.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
-ModalAdd.BackgroundTransparency = 0.1
-ModalAdd.ZIndex = 10
-ModalAdd.Visible = false
-
-local OutfitNameInput = Instance.new("TextBox", ModalAdd)
-OutfitNameInput.Size = UDim2.new(0.8, 0, 0, 40)
-OutfitNameInput.Position = UDim2.new(0.1, 0, 0.3, 0)
-OutfitNameInput.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-OutfitNameInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-OutfitNameInput.PlaceholderText = "اسم الطقم..."
-OutfitNameInput.Font = Enum.Font.GothamBold
-OutfitNameInput.TextSize = 14
-OutfitNameInput.ZIndex = 11
-Instance.new("UICorner", OutfitNameInput)
-
-local BtnSaveOutfit = CreateBaseButton("حفظ", ModalAdd)
-BtnSaveOutfit.Size = UDim2.new(0.35, 0, 0, 35)
-BtnSaveOutfit.Position = UDim2.new(0.1, 0, 0.5, 0)
-BtnSaveOutfit.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
-BtnSaveOutfit.ZIndex = 11
-
-local BtnCancelOutfit = CreateBaseButton("الغاء", ModalAdd)
-BtnCancelOutfit.Size = UDim2.new(0.35, 0, 0, 35)
-BtnCancelOutfit.Position = UDim2.new(0.55, 0, 0.5, 0)
-BtnCancelOutfit.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
-BtnCancelOutfit.ZIndex = 11
-
-local ModalDel = Instance.new("Frame", MainFrame)
-ModalDel.Size = UDim2.new(1, 0, 1, 0)
-ModalDel.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
-ModalDel.ZIndex = 10
-ModalDel.Visible = false
-
-local DelText = Instance.new("TextLabel", ModalDel)
-DelText.Size = UDim2.new(1, 0, 0, 40)
-DelText.Position = UDim2.new(0, 0, 0.3, 0)
-DelText.BackgroundTransparency = 1
-DelText.Text = "هل انت متاكد من الحذف؟"
-DelText.TextColor3 = Color3.fromRGB(255, 50, 50)
-DelText.Font = Enum.Font.GothamBold
-DelText.TextSize = 18
-DelText.ZIndex = 11
-
-local BtnConfirmDel = CreateBaseButton("نعم", ModalDel)
-BtnConfirmDel.Size = UDim2.new(0.35, 0, 0, 35)
-BtnConfirmDel.Position = UDim2.new(0.1, 0, 0.5, 0)
-BtnConfirmDel.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
-BtnConfirmDel.ZIndex = 11
-
-local BtnCancelDel = CreateBaseButton("الغاء", ModalDel)
-BtnCancelDel.Size = UDim2.new(0.35, 0, 0, 35)
-BtnCancelDel.Position = UDim2.new(0.55, 0, 0.5, 0)
-BtnCancelDel.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-BtnCancelDel.ZIndex = 11
-
-local function ForceApplySkin(char, skinProps)
-    if not char or not char:FindFirstChild("Humanoid") then return end
-    
-    if skinProps.Clothes.Shirt then
-        local s = char:FindFirstChildOfClass("Shirt") or Instance.new("Shirt", char)
-        s.ShirtTemplate = skinProps.Clothes.Shirt
-    end
-    if skinProps.Clothes.Pants then
-        local p = char:FindFirstChildOfClass("Pants") or Instance.new("Pants", char)
-        p.PantsTemplate = skinProps.Clothes.Pants
-    end
-    if skinProps.Clothes.Graphic then
-        local t = char:FindFirstChildOfClass("ShirtGraphic") or Instance.new("ShirtGraphic", char)
-        t.Graphic = skinProps.Clothes.Graphic
-    end
-    
-    for partName, pData in pairs(skinProps.Parts) do
-        local part = char:FindFirstChild(partName)
-        if part then
-            if part:IsA("MeshPart") then
-                pcall(function() part.MeshId = pData.MeshId end)
-                pcall(function() part.TextureID = pData.TextureID end)
-            else
-                local mesh = part:FindFirstChildOfClass("SpecialMesh") or Instance.new("SpecialMesh", part)
-                pcall(function() mesh.MeshId = pData.MeshId end)
-                pcall(function() mesh.TextureId = pData.TextureID end)
-            end
-            pcall(function() part.Color = Color3.fromHex(pData.Color) end)
-            pcall(function() part.Size = Vector3.new(pData.SizeX, pData.SizeY, pData.SizeZ) end)
-        end
-    end
-
-    if skinProps.Face ~= "" then
-        local head = char:FindFirstChild("Head")
-        if head then
-            local face = head:FindFirstChildOfClass("Decal") or Instance.new("Decal", head)
-            face.Texture = skinProps.Face
-        end
-    end
-end
-
-local function RefreshSkinsUI()
-    for _, child in pairs(SkinsScroll:GetChildren()) do
-        if child:IsA("TextButton") and child.LayoutOrder > 2 then child:Destroy() end
-    end
-    
-    for skinName, skinProps in pairs(SavedSkins) do
-        local btn = CreateBaseButton(skinName, SkinsScroll, 10)
-        
-        btn.MouseButton1Click:Connect(function()
-            local char = Player.Character
-            ActiveSkinData = skinProps -- تفعيل المراقبة وتثبيت السكن
-            ForceApplySkin(char, skinProps)
-            Notify("Zoko Skins", "تم تركيب وتثبيت الطقم بنجاح!", Color3.fromRGB(0, 255, 127))
-        end)
-        
-        btn.MouseButton2Click:Connect(function()
-            SkinToDelete = skinName
-            ModalDel.Visible = true
-        end)
-    end
-    
-    -- زر لإلغاء تثبيت السكن
-    local BtnClearSkin = CreateBaseButton("إيقاف تثبيت السكن الحالي", SkinsScroll, 999)
-    BtnClearSkin.TextColor3 = Color3.fromRGB(255, 200, 0)
-    BtnClearSkin.MouseButton1Click:Connect(function()
-        ActiveSkinData = nil
-        Notify("Zoko Skins", "تم إيقاف فرض السكن.", Color3.fromRGB(255, 200, 0))
-    end)
-end
-RefreshSkinsUI()
-
-BtnAddOutfit.MouseButton1Click:Connect(function() ModalAdd.Visible = true OutfitNameInput.Text = "" end)
-BtnCancelOutfit.MouseButton1Click:Connect(function() ModalAdd.Visible = false end)
-
-BtnSaveOutfit.MouseButton1Click:Connect(function()
-    local name = OutfitNameInput.Text
-    local char = Player.Character
-    if name ~= "" and char then
-        local data = { Parts = {}, Clothes = {}, Face = "" }
-        
-        for _, v in pairs(char:GetChildren()) do
-            if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then
-                local mesh = v:FindFirstChildOfClass("SpecialMesh")
-                data.Parts[v.Name] = {
-                    Color = v.Color:ToHex(),
-                    SizeX = v.Size.X, SizeY = v.Size.Y, SizeZ = v.Size.Z,
-                    MeshId = v:IsA("MeshPart") and v.MeshId or (mesh and mesh.MeshId or ""),
-                    TextureID = v:IsA("MeshPart") and v.TextureID or (mesh and mesh.TextureId or "")
-                }
-            elseif v:IsA("Shirt") then data.Clothes.Shirt = v.ShirtTemplate
-            elseif v:IsA("Pants") then data.Clothes.Pants = v.PantsTemplate
-            elseif v:IsA("ShirtGraphic") then data.Clothes.Graphic = v.Graphic
-            end
-        end
-        
-        local head = char:FindFirstChild("Head")
-        local face = head and head:FindFirstChildOfClass("Decal")
-        if face then data.Face = face.Texture end
-        
-        SavedSkins[name] = data
-        SaveDataToFile()
-        RefreshSkinsUI()
-        ModalAdd.Visible = false
-        Notify("Zoko Skins", "تم حفظ الطقم!", Color3.fromRGB(0, 255, 127))
-    end
-end)
-
-BtnConfirmDel.MouseButton1Click:Connect(function()
-    SavedSkins[SkinToDelete] = nil
-    SaveDataToFile()
-    RefreshSkinsUI()
-    ModalDel.Visible = false
-    Notify("Zoko Skins", "تم الحذف!", Color3.fromRGB(255, 50, 50))
-end)
-BtnCancelDel.MouseButton1Click:Connect(function() ModalDel.Visible = false end)
-BtnBackToMenu.MouseButton1Click:Connect(function() SkinsScroll.Visible = false ScrollFrame.Visible = true end)
-
-local Features = {
-    GodMode = false, Fly = false, Invisible = false, SSInvisPos = nil,
-    Ghost = false, FakeMe = false, CustomSpeed = false, SpeedValue = 50, CustomJump = false, JumpValue = 100
-}
 
 local function CreateInputRow(text, defaultValue, parent)
     local Row = Instance.new("Frame")
@@ -382,42 +173,50 @@ local function CreateInputRow(text, defaultValue, parent)
     return ToggleBtn, InputBox
 end
 
-local BtnGod = CreateBaseButton("God Mode & Anti-Ragdoll: OFF", ScrollFrame)
-local BtnFly = CreateBaseButton("Fly: OFF", ScrollFrame)
-local BtnInvis = CreateBaseButton("SS Invisibility (Need Fly): OFF", ScrollFrame)
-BtnInvis.Visible = true 
-BtnInvis.Size = UDim2.new(0.9, 0, 0, 35)
-BtnInvis.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-
-local BtnInfJump = CreateBaseButton("Infinite Jump: OFF", ScrollFrame)
-local BtnFakeMe = CreateBaseButton("Fake Me (Desync): OFF", ScrollFrame)
+local BtnGod = CreateButton("God Mode & No Knockback: OFF", ScrollFrame)
+local BtnNoclip = CreateButton("Noclip (Wallhack): OFF", ScrollFrame)
+local BtnInstant = CreateButton("Instant Interact (No Hold): OFF", ScrollFrame)
+local BtnSuperHit = CreateButton("Super Hero Hit (Fling): OFF", ScrollFrame)
+local BtnInfJump = CreateButton("Infinite Jump: OFF", ScrollFrame)
+local BtnAntiAFK = CreateButton("Anti-AFK: ON", ScrollFrame)
+BtnAntiAFK.TextColor3 = Color3.fromRGB(0, 255, 127) -- مفعل تلقائياً
 
 local BtnSpeed, BoxSpeed = CreateInputRow("Walk Speed: OFF", 50, ScrollFrame)
 local BtnJump, BoxJump = CreateInputRow("Jump Power: OFF", 100, ScrollFrame)
 
-local BtnSkinsMenu = CreateBaseButton("منيو السكنات", ScrollFrame)
-BtnSkinsMenu.TextColor3 = Color3.fromRGB(0, 212, 255)
-BtnSkinsMenu.MouseButton1Click:Connect(function() ScrollFrame.Visible = false SkinsScroll.Visible = true end)
+-- ==========================================
+-- الأنظمة الأساسية (Loops)
+-- ==========================================
 
--- Loop System: تثبيت السكن وإعدادات السيرفر
+-- نظام Noclip (اختراق الجدران)
+RunService.Stepped:Connect(function()
+    if Features.Noclip and Player.Character then
+        for _, part in pairs(Player.Character:GetDescendants()) do
+            if part:IsA("BasePart") and part.CanCollide then
+                part.CanCollide = false
+            end
+        end
+    end
+end)
+
+-- نظام Super Hit (تحويل السلاح لقوة دافعة خارقة)
+RunService.Heartbeat:Connect(function()
+    if Features.SuperHit and Player.Character then
+        local tool = Player.Character:FindFirstChildOfClass("Tool")
+        if tool and tool:FindFirstChild("Handle") then
+            -- إعطاء السلاح سرعة دوران جنونية مخفية تطيّر أي شخص يلمسه
+            tool.Handle.AssemblyLinearVelocity = Vector3.new(0, 99999, 0)
+            tool.Handle.AssemblyAngularVelocity = Vector3.new(99999, 99999, 99999)
+        end
+    end
+end)
+
 local RenderLoop = RunService.RenderStepped:Connect(function()
     local char = Player.Character
     if not char then return end
 
-    -- تثبيت السكن غصب عن الماب إذا كان مفعل
-    if ActiveSkinData then
-        pcall(function() ForceApplySkin(char, ActiveSkinData) end)
-    end
-    
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    
-    -- نظام الاختفاء السيرفر سايد (نقل الجسم بعيداً)
-    if Features.Invisible and hrp and Features.Fly then
-        -- السيرفر يشوفك في السماء، والكاميرا تتحرك بحرية معاك محلياً
-        hrp.CFrame = CFrame.new(0, 999999, 0)
-    end
-
     local hum = char:FindFirstChild("Humanoid")
+    local hrp = char:FindFirstChild("HumanoidRootPart")
     if not hum then return end
 
     if Features.GodMode then
@@ -426,73 +225,58 @@ local RenderLoop = RunService.RenderStepped:Connect(function()
             hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
             hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
             hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+            -- جعل الشخصية ثقيلة جداً لعدم الدفع
+            if hrp then hrp.CustomPhysicalProperties = PhysicalProperties.new(100, 0.3, 0.5, 1, 1) end
         end)
+    else
+        pcall(function() if hrp then hrp.CustomPhysicalProperties = PhysicalProperties.new(0.7, 0.3, 0.5, 1, 1) end end)
     end
 
     if Features.CustomSpeed then hum.WalkSpeed = Features.SpeedValue end
     if Features.CustomJump then hum.UseJumpPower = true hum.JumpPower = Features.JumpValue end
 end)
 
+-- نظام Instant Interact (التفاعل الفوري)
+local function SetInstantPrompts()
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("ProximityPrompt") then
+            obj.HoldDuration = 0
+        end
+    end
+end
+
+workspace.DescendantAdded:Connect(function(obj)
+    if Features.InstantInteract and obj:IsA("ProximityPrompt") then
+        task.wait(0.1)
+        obj.HoldDuration = 0
+    end
+end)
+
+BtnInstant.MouseButton1Click:Connect(function()
+    Features.InstantInteract = not Features.InstantInteract
+    BtnInstant.Text = Features.InstantInteract and "Instant Interact (No Hold): ON" or "Instant Interact (No Hold): OFF"
+    BtnInstant.TextColor3 = Features.InstantInteract and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
+    if Features.InstantInteract then SetInstantPrompts() end
+end)
+
 BtnGod.MouseButton1Click:Connect(function()
     Features.GodMode = not Features.GodMode
-    BtnGod.Text = Features.GodMode and "God Mode & Anti-Ragdoll: ON" or "God Mode & Anti-Ragdoll: OFF"
+    BtnGod.Text = Features.GodMode and "God Mode & No Knockback: ON" or "God Mode & No Knockback: OFF"
     BtnGod.TextColor3 = Features.GodMode and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
 end)
 
-local FlyLoop
-BtnFly.MouseButton1Click:Connect(function()
-    Features.Fly = not Features.Fly
-    BtnFly.Text = Features.Fly and "Fly: ON" or "Fly: OFF"
-    BtnFly.TextColor3 = Features.Fly and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
-    
-    local char = Player.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-
-    if Features.Fly then
-        char.Humanoid.PlatformStand = true
-        FlyLoop = RunService.RenderStepped:Connect(function()
-            local cam = workspace.CurrentCamera
-            local move = Vector3.new(0,0,0)
-            local speed = 2.0 
-            
-            if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then speed = 8.0 end 
-            
-            if UIS:IsKeyDown(Enum.KeyCode.W) then move = move + cam.CFrame.LookVector end
-            if UIS:IsKeyDown(Enum.KeyCode.S) then move = move - cam.CFrame.LookVector end
-            if UIS:IsKeyDown(Enum.KeyCode.D) then move = move + cam.CFrame.RightVector end
-            if UIS:IsKeyDown(Enum.KeyCode.A) then move = move - cam.CFrame.RightVector end
-            if UIS:IsKeyDown(Enum.KeyCode.Q) then move = move + Vector3.new(0,1,0) end 
-            if UIS:IsKeyDown(Enum.KeyCode.Z) then move = move - Vector3.new(0,1,0) end 
-            
-            hrp.Velocity = Vector3.new(0,0,0)
-            -- إذا كان الاختفاء شغال، الموفمنت تكون وهمية بس عشان تتحرك الكاميرا لك
-            if not Features.Invisible then
-                hrp.CFrame = hrp.CFrame + (move * speed)
-            else
-                workspace.CurrentCamera.CFrame = workspace.CurrentCamera.CFrame + (move * speed)
-            end
-        end)
-    else
-        char.Humanoid.PlatformStand = false
-        if FlyLoop then FlyLoop:Disconnect() end
-    end
+BtnNoclip.MouseButton1Click:Connect(function()
+    Features.Noclip = not Features.Noclip
+    BtnNoclip.Text = Features.Noclip and "Noclip (Wallhack): ON" or "Noclip (Wallhack): OFF"
+    BtnNoclip.TextColor3 = Features.Noclip and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
 end)
 
-BtnInvis.MouseButton1Click:Connect(function()
-    Features.Invisible = not Features.Invisible
-    BtnInvis.Text = Features.Invisible and "SS Invisibility (Need Fly): ON" or "SS Invisibility (Need Fly): OFF"
-    BtnInvis.TextColor3 = Features.Invisible and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
-    
-    local char = Player.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if Features.Invisible and not Features.Fly then
-        Notify("تنبيه!", "الاختفاء القوي يتطلب تشغيل الطيران (Fly) عشان ما تطيح وتموت.", Color3.fromRGB(255, 100, 100))
-    end
-    
-    -- إرجاع اللاعب للأرض لو طفى الاختفاء
-    if not Features.Invisible and hrp then
-        hrp.CFrame = workspace.CurrentCamera.CFrame
+BtnSuperHit.MouseButton1Click:Connect(function()
+    Features.SuperHit = not Features.SuperHit
+    BtnSuperHit.Text = Features.SuperHit and "Super Hero Hit (Fling): ON" or "Super Hero Hit (Fling): OFF"
+    BtnSuperHit.TextColor3 = Features.SuperHit and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
+    if Features.SuperHit then
+        Notify("Super Hit Activated", "امسك أي سلاح واضرب اللاعبين عشان يطيرون!", Color3.fromRGB(255, 100, 100))
     end
 end)
 
@@ -508,45 +292,24 @@ local JumpLoop = UIS.JumpRequest:Connect(function()
     end
 end)
 
-BtnFakeMe.MouseButton1Click:Connect(function()
-    Features.FakeMe = not Features.FakeMe
-    BtnFakeMe.Text = Features.FakeMe and "Fake Me (Desync): ON" or "Fake Me (Desync): OFF"
-    BtnFakeMe.TextColor3 = Features.FakeMe and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
-    
-    local char = Player.Character
-    if not char then return end
-
-    if Features.FakeMe then
-        char.Archivable = true
-        FakeClone = char:Clone()
-        FakeClone.Name = char.Name .. "_Fake"
-        FakeClone.Parent = workspace
-        FakeClone:SetPrimaryPartCFrame(char:GetPrimaryPartCFrame())
-        
-        for _, v in pairs(FakeClone:GetDescendants()) do
-            if v:IsA("BasePart") then v.Anchored = true end
-        end
-        
-        for _, v in pairs(char:GetDescendants()) do
-            if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then
-                v.Transparency = 0.5
-                v.Color = Color3.fromRGB(150, 150, 150)
-                v.Material = Enum.Material.ForceField
-            elseif v:IsA("Decal") then
-                v.Transparency = 0.5
-            end
-        end
-    else
-        if FakeClone then FakeClone:Destroy() end
-        for _, v in pairs(char:GetDescendants()) do
-            if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then
-                v.Transparency = 0
-                v.Material = Enum.Material.Plastic
-            elseif v:IsA("Decal") then
-                v.Transparency = 0
-            end
+-- ==========================================
+-- نظام مضاد الـ AFK
+-- ==========================================
+Player.Idled:Connect(function()
+    if Features.AntiAFK then
+        VirtualUser:CaptureController()
+        VirtualUser:ClickButton2(Vector2.new())
+        if Player.Character and Player.Character:FindFirstChild("Humanoid") then
+            Player.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+            Notify("Anti-AFK", "تم منع طردك من اللعبة وجعلك تقفز!", Color3.fromRGB(0, 255, 127))
         end
     end
+end)
+
+BtnAntiAFK.MouseButton1Click:Connect(function()
+    Features.AntiAFK = not Features.AntiAFK
+    BtnAntiAFK.Text = Features.AntiAFK and "Anti-AFK: ON" or "Anti-AFK: OFF"
+    BtnAntiAFK.TextColor3 = Features.AntiAFK and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
 end)
 
 BtnSpeed.MouseButton1Click:Connect(function()
@@ -567,7 +330,7 @@ BoxJump.FocusLost:Connect(function() Features.JumpValue = tonumber(BoxJump.Text)
 
 local DevBtn = Instance.new("TextButton")
 DevBtn.Size = UDim2.new(1, 0, 0, 25)
-DevBtn.Position = UDim2.new(0, 0, 1, -45)
+DevBtn.Position = UDim2.new(0, 0, 1, -25)
 DevBtn.BackgroundTransparency = 1
 DevBtn.RichText = true
 DevBtn.Text = [[Developed by <font color="rgb(0, 212, 255)"><b>Zoko</b></font>]]
@@ -575,33 +338,6 @@ DevBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
 DevBtn.Font = Enum.Font.GothamMedium
 DevBtn.TextSize = 14
 DevBtn.Parent = MainFrame
-
-local RestartBtn = Instance.new("TextButton")
-RestartBtn.Size = UDim2.new(1, 0, 0, 20)
-RestartBtn.Position = UDim2.new(0, 0, 1, -22)
-RestartBtn.BackgroundTransparency = 1
-RestartBtn.Text = "RESTART"
-RestartBtn.TextColor3 = Color3.fromRGB(0, 212, 255)
-RestartBtn.Font = Enum.Font.GothamBlack
-RestartBtn.TextSize = 16
-RestartBtn.Parent = MainFrame
-
-local RestartGlow = Instance.new("UIStroke")
-RestartGlow.Color = Color3.fromRGB(0, 212, 255)
-RestartGlow.Transparency = 0.5
-RestartGlow.Thickness = 0.6
-RestartGlow.Parent = RestartBtn
-
-RestartBtn.MouseButton1Click:Connect(function()
-    if RenderLoop then RenderLoop:Disconnect() end
-    if FlyLoop then FlyLoop:Disconnect() end
-    if JumpLoop then JumpLoop:Disconnect() end
-    ScreenGui:Destroy()
-    
-    pcall(function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/Ray2133231/Zoko2/main/main.lua"))()
-    end)
-end)
 
 local OpenBtn = Instance.new("TextButton")
 OpenBtn.Size = UDim2.new(0, 45, 0, 45)
