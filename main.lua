@@ -1,4 +1,4 @@
--- [[ Zoko Hub V13 - The Perfect Vehicle Fly & Smart UI ]]
+-- [[ Zoko Hub V14 - Anti-Spin & Vehicle Noclip Fix ]]
 
 local Player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -36,7 +36,7 @@ Stroke.Thickness = 2
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.BackgroundTransparency = 1
-Title.Text = "ZOKO HUB V13"
+Title.Text = "ZOKO HUB V14"
 Title.TextColor3 = Color3.fromRGB(0, 212, 255)
 Title.Font = Enum.Font.GothamBlack
 Title.TextSize = 22
@@ -420,7 +420,7 @@ end
 local BtnWand = CreateButton("Control Wand (أداة التحكم): OFF", ScrollFrame)
 local BtnFly = CreateButton("Fly (Shift/Q/Z): OFF", ScrollFrame)
 
--- زر الـ Fly Noclip الحين مخفي بالأساس
+-- زر الـ Fly Noclip الحين مخفي بالأساس عشان الترتيب
 local BtnFlyNoclip = CreateButton("Fly Noclip (اختراق أثناء الطيران): OFF", ScrollFrame)
 BtnFlyNoclip.Visible = false
 
@@ -436,8 +436,21 @@ local BtnSpeed, BoxSpeed = CreateInputRow("Walk Speed: OFF", 50, ScrollFrame)
 local BtnJump, BoxJump = CreateInputRow("Jump Power: OFF", 100, ScrollFrame)
 
 -- ==========================================
--- الأنظمة (Loops)
+-- الأنظمة (Loops & Functions)
 -- ==========================================
+
+-- دالة ذكية للبحث عن المجسم الرئيسي للسيارة كاملة (لحل مشكلة النوكلب)
+local function GetTopVehicle(seatPart)
+    local topModel = seatPart
+    local current = seatPart
+    while current and current.Parent and current.Parent ~= workspace do
+        current = current.Parent
+        if current:IsA("Model") then
+            topModel = current
+        end
+    end
+    return topModel
+end
 
 BtnWand.MouseButton1Click:Connect(function()
     Features.ControlWand = not Features.ControlWand
@@ -468,7 +481,7 @@ BtnWand.MouseButton1Click:Connect(function()
     end
 end)
 
--- نظام الطيران الذكي (طيران خارق للسيارات والشخصية)
+-- نظام الطيران الذكي (مانع الدوران للسيارات - Anti-Spin)
 local FlyLoop, bg, bv, FlyNoclipLoop
 BtnFly.MouseButton1Click:Connect(function()
     Features.Fly = not Features.Fly
@@ -486,8 +499,10 @@ BtnFly.MouseButton1Click:Connect(function()
     local isVehicle = false
     
     if humanoid and humanoid.SeatPart then
-        targetPart = humanoid.SeatPart
         isVehicle = true
+        local topVehicle = GetTopVehicle(humanoid.SeatPart)
+        -- استهداف مركز السيارة الأساسي بدال المقعد لتجنب اختلال التوازن
+        targetPart = topVehicle.PrimaryPart or humanoid.SeatPart
     end
 
     if not targetPart then return end
@@ -495,9 +510,9 @@ BtnFly.MouseButton1Click:Connect(function()
     if Features.Fly then
         if not isVehicle then char.Humanoid.PlatformStand = true end
         
-        -- رفع القوة لـ math.huge عشان السيارة ما تنزل نهائياً ويكون التحكم ثابت
         bg = Instance.new("BodyGyro", targetPart)
         bg.P = 9e5
+        bg.D = 2000 -- زودنا الدامبينج عشان السيارة ما ترج أو تدور
         bg.maxTorque = Vector3.new(math.huge, math.huge, math.huge)
         bg.cframe = targetPart.CFrame
         
@@ -519,7 +534,14 @@ BtnFly.MouseButton1Click:Connect(function()
             if UIS:IsKeyDown(Enum.KeyCode.Q) then move = move + Vector3.new(0, 1, 0) end 
             if UIS:IsKeyDown(Enum.KeyCode.Z) then move = move - Vector3.new(0, 1, 0) end 
             
-            bg.cframe = cam.CFrame
+            if isVehicle then
+                -- حل مشكلة الدوران: نأخذ ميلان الكاميرا (فوق وتحت/يمين ويسار) ونلغي الجانبي (Roll)
+                local rx, ry, rz = cam.CFrame:ToOrientation()
+                bg.cframe = CFrame.new(targetPart.Position) * CFrame.Angles(rx, ry, 0)
+            else
+                bg.cframe = cam.CFrame
+            end
+
             if move.Magnitude > 0 then
                 bv.velocity = move.Unit * speed
             else
@@ -542,16 +564,7 @@ BtnFly.MouseButton1Click:Connect(function()
     end
 end)
 
--- دالة للبحث عن المجسم الرئيسي للسيارة كاملة
-local function GetTopVehicle(seatPart)
-    local current = seatPart
-    while current.Parent and current.Parent ~= workspace do
-        current = current.Parent
-    end
-    return current
-end
-
--- نظام اختراق الجدران الخاص بالطيران (Fly Noclip للسيارة والشخصية)
+-- نظام اختراق الجدران الخاص بالطيران (Vehicle Full Noclip)
 BtnFlyNoclip.MouseButton1Click:Connect(function()
     if not Features.Fly then
         Notify("تنبيه", "يجب تفعيل الطيران (Fly) أولاً!", Color3.fromRGB(255, 50, 50))
@@ -572,13 +585,15 @@ BtnFlyNoclip.MouseButton1Click:Connect(function()
                     end
                 end
                 
-                -- اختراق كل قطع السيارة
+                -- اختراق كل قطع السيارة باستخدام الدالة الذكية
                 local hum = Player.Character:FindFirstChild("Humanoid")
                 if hum and hum.SeatPart then
                     local fullVehicle = GetTopVehicle(hum.SeatPart)
-                    for _, part in pairs(fullVehicle:GetDescendants()) do
-                        if part:IsA("BasePart") then
-                            part.CanCollide = false
+                    if fullVehicle then
+                        for _, part in pairs(fullVehicle:GetDescendants()) do
+                            if part:IsA("BasePart") and part.CanCollide then
+                                part.CanCollide = false
+                            end
                         end
                     end
                 end
