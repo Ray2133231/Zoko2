@@ -1,4 +1,4 @@
--- [[ Zoko Hub V7.2 - Perfected Fling, Instant Interact & UI Fixes ]]
+-- [[ Zoko Hub V7.3 - Anti-Rubberband Noclip & Perfect Anti-Ragdoll ]]
 
 local Player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -31,7 +31,7 @@ Stroke.Thickness = 2
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.BackgroundTransparency = 1
-Title.Text = "ZOKO HUB V7.2"
+Title.Text = "ZOKO HUB V7.3"
 Title.TextColor3 = Color3.fromRGB(0, 212, 255)
 Title.Font = Enum.Font.GothamBlack
 Title.TextSize = 22
@@ -63,7 +63,6 @@ local function MakeDraggable(gui)
 end
 MakeDraggable(MainFrame)
 
--- رفعنا السكرول شوي عشان نعطي مساحة لزر الريستارت
 local ScrollFrame = Instance.new("ScrollingFrame")
 ScrollFrame.Size = UDim2.new(1, 0, 1, -110) 
 ScrollFrame.Position = UDim2.new(0, 0, 0, 45)
@@ -174,8 +173,8 @@ local function CreateInputRow(text, defaultValue, parent)
     return ToggleBtn, InputBox
 end
 
-local BtnGod = CreateButton("God Mode & No Knockback: OFF", ScrollFrame)
-local BtnNoclip = CreateButton("Noclip (Wallhack): OFF", ScrollFrame)
+local BtnGod = CreateButton("God Mode & No Ragdoll: OFF", ScrollFrame)
+local BtnNoclip = CreateButton("Noclip (Anti-Rubberband): OFF", ScrollFrame)
 local BtnInstant = CreateButton("Instant Interact (No Hold): OFF", ScrollFrame)
 local BtnSuperHit = CreateButton("Super Hero Hit (Fling): OFF", ScrollFrame)
 local BtnInfJump = CreateButton("Infinite Jump: OFF", ScrollFrame)
@@ -189,14 +188,35 @@ local BtnJump, BoxJump = CreateInputRow("Jump Power: OFF", 100, ScrollFrame)
 -- الأنظمة الأساسية (Loops)
 -- ==========================================
 
--- نظام Noclip
+-- نظام Noclip المضاد للإرجاع (Anti-Rubberband Bypass)
+local lastNoclipPos = nil
 local NoclipLoop = RunService.Stepped:Connect(function()
     if Features.Noclip and Player.Character then
+        local hrp = Player.Character:FindFirstChild("HumanoidRootPart")
+        local hum = Player.Character:FindFirstChild("Humanoid")
+        
         for _, part in pairs(Player.Character:GetDescendants()) do
             if part:IsA("BasePart") and part.CanCollide then
                 part.CanCollide = false
             end
         end
+
+        -- منع السيرفر من إرجاعك للخلف إذا كنت تخترق جدار
+        if hrp and hum and hum.Health > 0 then
+            if lastNoclipPos then
+                local dist = (hrp.Position - lastNoclipPos).Magnitude
+                -- إذا المسافة بين الفريم الماضي والحالي أكبر من 10 (يعني السيرفر سحبك لورا) وأقل من 80 (مو ريسباون)
+                if dist > 10 and dist < 80 then
+                    -- كسر أمر السيرفر وإرجاعك لمكان الاختراق بقوة!
+                    hrp.CFrame = CFrame.new(lastNoclipPos)
+                end
+            end
+            lastNoclipPos = hrp.Position
+            -- تغيير حالة اللاعب للمشي الوهمي لزيادة كسر حماية السيرفر
+            hum:ChangeState(11) 
+        end
+    else
+        lastNoclipPos = nil
     end
 end)
 
@@ -237,6 +257,7 @@ local SuperHitLoop = RunService.Heartbeat:Connect(function()
     end
 end)
 
+-- نظام القود مود المضاد للطيحة (Anti-Ragdoll Force Stand)
 local RenderLoop = RunService.RenderStepped:Connect(function()
     local char = Player.Character
     if not char then return end
@@ -251,6 +272,14 @@ local RenderLoop = RunService.RenderStepped:Connect(function()
             hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
             hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
             hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+            
+            -- كسر أمر الريقدول (لو السيرفر طيحك، توقف فوراً غصب)
+            local currentState = hum:GetState()
+            if currentState == Enum.HumanoidStateType.Ragdoll or currentState == Enum.HumanoidStateType.FallingDown then
+                hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+            end
+
+            -- زيادة الوزن لمنع الدفع
             if hrp then hrp.CustomPhysicalProperties = PhysicalProperties.new(100, 0.3, 0.5, 1, 1) end
         end)
     else
@@ -289,13 +318,13 @@ end)
 
 BtnGod.MouseButton1Click:Connect(function()
     Features.GodMode = not Features.GodMode
-    BtnGod.Text = Features.GodMode and "God Mode & No Knockback: ON" or "God Mode & No Knockback: OFF"
+    BtnGod.Text = Features.GodMode and "God Mode & No Ragdoll: ON" or "God Mode & No Ragdoll: OFF"
     BtnGod.TextColor3 = Features.GodMode and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
 end)
 
 BtnNoclip.MouseButton1Click:Connect(function()
     Features.Noclip = not Features.Noclip
-    BtnNoclip.Text = Features.Noclip and "Noclip (Wallhack): ON" or "Noclip (Wallhack): OFF"
+    BtnNoclip.Text = Features.Noclip and "Noclip (Anti-Rubberband): ON" or "Noclip (Anti-Rubberband): OFF"
     BtnNoclip.TextColor3 = Features.Noclip and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
 end)
 
