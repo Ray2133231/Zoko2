@@ -1,4 +1,4 @@
--- [[ Zoko Hub V5 - Ultimate Glass Edition (Absolute Raw Clone & Forced Invis) ]]
+-- [[ Zoko Hub V6 - Server-Side Pseudo Invis & Forced Loop Clone ]]
 
 local Player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -6,7 +6,6 @@ local UIS = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
 local HttpService = game:GetService("HttpService")
 
--- حذف الواجهة القديمة
 if _G.ZokoUI then pcall(function() _G.ZokoUI:Destroy() end) end
 
 local ScreenGui = Instance.new("ScreenGui")
@@ -32,7 +31,7 @@ Stroke.Thickness = 2
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.BackgroundTransparency = 1
-Title.Text = "ZOKO HUB V5"
+Title.Text = "ZOKO HUB V6"
 Title.TextColor3 = Color3.fromRGB(0, 212, 255)
 Title.Font = Enum.Font.GothamBlack
 Title.TextSize = 22
@@ -134,12 +133,10 @@ local function Notify(titleText, descText, color)
     NotifFrame:Destroy()
 end
 
--- ==========================================
--- نظام النسخ الفيزيائي الخام V5 (Raw Physical Clone)
--- ==========================================
 local SavedSkins = {}
 local SkinToDelete = ""
-local FileName = "ZokoHub_V5_Skins.json"
+local FileName = "ZokoHub_V6_Skins.json"
+local ActiveSkinData = nil -- لحفظ السكن الحالي وإرجاعه تلقائياً
 
 local function SaveDataToFile()
     if writefile then pcall(function() writefile(FileName, HttpService:JSONEncode(SavedSkins)) end) end
@@ -172,7 +169,6 @@ BtnBackToMenu.TextColor3 = Color3.fromRGB(255, 100, 100)
 local BtnAddOutfit = CreateBaseButton("اضافة طقم", SkinsScroll, 2)
 BtnAddOutfit.TextColor3 = Color3.fromRGB(0, 255, 127)
 
--- النوافذ المنبثقة (Modals)
 local ModalAdd = Instance.new("Frame", MainFrame)
 ModalAdd.Size = UDim2.new(1, 0, 1, 0)
 ModalAdd.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
@@ -231,6 +227,47 @@ BtnCancelDel.Position = UDim2.new(0.55, 0, 0.5, 0)
 BtnCancelDel.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 BtnCancelDel.ZIndex = 11
 
+local function ForceApplySkin(char, skinProps)
+    if not char or not char:FindFirstChild("Humanoid") then return end
+    
+    if skinProps.Clothes.Shirt then
+        local s = char:FindFirstChildOfClass("Shirt") or Instance.new("Shirt", char)
+        s.ShirtTemplate = skinProps.Clothes.Shirt
+    end
+    if skinProps.Clothes.Pants then
+        local p = char:FindFirstChildOfClass("Pants") or Instance.new("Pants", char)
+        p.PantsTemplate = skinProps.Clothes.Pants
+    end
+    if skinProps.Clothes.Graphic then
+        local t = char:FindFirstChildOfClass("ShirtGraphic") or Instance.new("ShirtGraphic", char)
+        t.Graphic = skinProps.Clothes.Graphic
+    end
+    
+    for partName, pData in pairs(skinProps.Parts) do
+        local part = char:FindFirstChild(partName)
+        if part then
+            if part:IsA("MeshPart") then
+                pcall(function() part.MeshId = pData.MeshId end)
+                pcall(function() part.TextureID = pData.TextureID end)
+            else
+                local mesh = part:FindFirstChildOfClass("SpecialMesh") or Instance.new("SpecialMesh", part)
+                pcall(function() mesh.MeshId = pData.MeshId end)
+                pcall(function() mesh.TextureId = pData.TextureID end)
+            end
+            pcall(function() part.Color = Color3.fromHex(pData.Color) end)
+            pcall(function() part.Size = Vector3.new(pData.SizeX, pData.SizeY, pData.SizeZ) end)
+        end
+    end
+
+    if skinProps.Face ~= "" then
+        local head = char:FindFirstChild("Head")
+        if head then
+            local face = head:FindFirstChildOfClass("Decal") or Instance.new("Decal", head)
+            face.Texture = skinProps.Face
+        end
+    end
+end
+
 local function RefreshSkinsUI()
     for _, child in pairs(SkinsScroll:GetChildren()) do
         if child:IsA("TextButton") and child.LayoutOrder > 2 then child:Destroy() end
@@ -239,80 +276,11 @@ local function RefreshSkinsUI()
     for skinName, skinProps in pairs(SavedSkins) do
         local btn = CreateBaseButton(skinName, SkinsScroll, 10)
         
-        -- تطبيق الطقم بالقوة (Forced Apply)
         btn.MouseButton1Click:Connect(function()
             local char = Player.Character
-            if char and char:FindFirstChild("Humanoid") then
-                
-                -- 1. تطبيق الملابس العادية (Shirt, Pants)
-                if skinProps.Clothes.Shirt then
-                    local s = char:FindFirstChildOfClass("Shirt") or Instance.new("Shirt", char)
-                    s.ShirtTemplate = skinProps.Clothes.Shirt
-                end
-                if skinProps.Clothes.Pants then
-                    local p = char:FindFirstChildOfClass("Pants") or Instance.new("Pants", char)
-                    p.PantsTemplate = skinProps.Clothes.Pants
-                end
-                if skinProps.Clothes.Graphic then
-                    local t = char:FindFirstChildOfClass("ShirtGraphic") or Instance.new("ShirtGraphic", char)
-                    t.Graphic = skinProps.Clothes.Graphic
-                end
-                
-                -- 2. إجبار الميشات والألوان لكل أجزاء الجسم (لنسخ الجسم بالضبط)
-                for partName, pData in pairs(skinProps.Parts) do
-                    local part = char:FindFirstChild(partName)
-                    if part then
-                        if part:IsA("MeshPart") then
-                            pcall(function() part.MeshId = pData.MeshId end)
-                            pcall(function() part.TextureID = pData.TextureID end)
-                        else
-                            local mesh = part:FindFirstChildOfClass("SpecialMesh") or Instance.new("SpecialMesh", part)
-                            pcall(function() mesh.MeshId = pData.MeshId end)
-                            pcall(function() mesh.TextureId = pData.TextureID end)
-                        end
-                        pcall(function() part.Color = Color3.fromHex(pData.Color) end)
-                        pcall(function() part.Size = Vector3.new(pData.SizeX, pData.SizeY, pData.SizeZ) end)
-                    end
-                end
-
-                -- 3. تطبيق الوجه
-                if skinProps.Face ~= "" then
-                    local head = char:FindFirstChild("Head")
-                    if head then
-                        local face = head:FindFirstChildOfClass("Decal") or Instance.new("Decal", head)
-                        face.Texture = skinProps.Face
-                    end
-                end
-
-                -- 4. إجبار BodyColors
-                if skinProps.BodyColors then
-                    local bc = char:FindFirstChildOfClass("BodyColors") or Instance.new("BodyColors", char)
-                    pcall(function() bc.HeadColor3 = Color3.fromHex(skinProps.BodyColors.Head) end)
-                    pcall(function() bc.TorsoColor3 = Color3.fromHex(skinProps.BodyColors.Torso) end)
-                    pcall(function() bc.LeftArmColor3 = Color3.fromHex(skinProps.BodyColors.LeftArm) end)
-                    pcall(function() bc.RightArmColor3 = Color3.fromHex(skinProps.BodyColors.RightArm) end)
-                    pcall(function() bc.LeftLegColor3 = Color3.fromHex(skinProps.BodyColors.LeftLeg) end)
-                    pcall(function() bc.RightLegColor3 = Color3.fromHex(skinProps.BodyColors.RightLeg) end)
-                end
-
-                -- 5. إجبار المقاسات (طول، عرض، إلخ)
-                local hum = char:FindFirstChild("Humanoid")
-                for scaleName, val in pairs(skinProps.Scales) do
-                    local v = hum:FindFirstChild(scaleName)
-                    if v and v:IsA("NumberValue") then v.Value = val end
-                end
-
-                -- 6. تطبيق الإضافات عن طريق HumanoidDescription (للقبعات والشعر فقط كدعم إضافي)
-                pcall(function()
-                    local desc = hum:GetAppliedDescription()
-                    if skinProps.Desc then
-                        for k, v in pairs(skinProps.Desc) do pcall(function() desc[k] = v end) end
-                    end
-                    hum:ApplyDescription(desc)
-                end)
-                
-                Notify("Zoko Skins", "تم تركيب الطقم بالكامل!", Color3.fromRGB(0, 255, 127))
-            end
+            ActiveSkinData = skinProps -- تفعيل المراقبة وتثبيت السكن
+            ForceApplySkin(char, skinProps)
+            Notify("Zoko Skins", "تم تركيب وتثبيت الطقم بنجاح!", Color3.fromRGB(0, 255, 127))
         end)
         
         btn.MouseButton2Click:Connect(function()
@@ -320,20 +288,26 @@ local function RefreshSkinsUI()
             ModalDel.Visible = true
         end)
     end
+    
+    -- زر لإلغاء تثبيت السكن
+    local BtnClearSkin = CreateBaseButton("إيقاف تثبيت السكن الحالي", SkinsScroll, 999)
+    BtnClearSkin.TextColor3 = Color3.fromRGB(255, 200, 0)
+    BtnClearSkin.MouseButton1Click:Connect(function()
+        ActiveSkinData = nil
+        Notify("Zoko Skins", "تم إيقاف فرض السكن.", Color3.fromRGB(255, 200, 0))
+    end)
 end
 RefreshSkinsUI()
 
 BtnAddOutfit.MouseButton1Click:Connect(function() ModalAdd.Visible = true OutfitNameInput.Text = "" end)
 BtnCancelOutfit.MouseButton1Click:Connect(function() ModalAdd.Visible = false end)
 
--- حفظ كل تفاصيل الجسم الخام
 BtnSaveOutfit.MouseButton1Click:Connect(function()
     local name = OutfitNameInput.Text
     local char = Player.Character
     if name ~= "" and char then
-        local data = { Parts = {}, Clothes = {}, Scales = {}, Desc = {}, BodyColors = nil, Face = "" }
+        local data = { Parts = {}, Clothes = {}, Face = "" }
         
-        -- 1. نسخ كل جزء من الجسم (السر هنا)
         for _, v in pairs(char:GetChildren()) do
             if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then
                 local mesh = v:FindFirstChildOfClass("SpecialMesh")
@@ -346,36 +320,18 @@ BtnSaveOutfit.MouseButton1Click:Connect(function()
             elseif v:IsA("Shirt") then data.Clothes.Shirt = v.ShirtTemplate
             elseif v:IsA("Pants") then data.Clothes.Pants = v.PantsTemplate
             elseif v:IsA("ShirtGraphic") then data.Clothes.Graphic = v.Graphic
-            elseif v:IsA("BodyColors") then
-                data.BodyColors = {
-                    Head = v.HeadColor3:ToHex(), Torso = v.TorsoColor3:ToHex(),
-                    LeftArm = v.LeftArmColor3:ToHex(), RightArm = v.RightArmColor3:ToHex(),
-                    LeftLeg = v.LeftLegColor3:ToHex(), RightLeg = v.RightLegColor3:ToHex()
-                }
             end
         end
         
         local head = char:FindFirstChild("Head")
         local face = head and head:FindFirstChildOfClass("Decal")
         if face then data.Face = face.Texture end
-
-        local hum = char:FindFirstChild("Humanoid")
-        if hum then
-            for _, v in pairs(hum:GetChildren()) do
-                if v:IsA("NumberValue") then data.Scales[v.Name] = v.Value end
-            end
-            pcall(function()
-                local d = hum:GetAppliedDescription()
-                local props = {"HatAccessory", "HairAccessory", "FaceAccessory", "NeckAccessory", "ShouldersAccessory", "FrontAccessory", "BackAccessory", "WaistAccessory"}
-                for _, p in ipairs(props) do data.Desc[p] = d[p] end
-            end)
-        end
         
         SavedSkins[name] = data
         SaveDataToFile()
         RefreshSkinsUI()
         ModalAdd.Visible = false
-        Notify("Zoko Skins", "تم حفظ الطقم ونسخ تفاصيل الجسم بدقة!", Color3.fromRGB(0, 255, 127))
+        Notify("Zoko Skins", "تم حفظ الطقم!", Color3.fromRGB(0, 255, 127))
     end
 end)
 
@@ -387,17 +343,12 @@ BtnConfirmDel.MouseButton1Click:Connect(function()
     Notify("Zoko Skins", "تم الحذف!", Color3.fromRGB(255, 50, 50))
 end)
 BtnCancelDel.MouseButton1Click:Connect(function() ModalDel.Visible = false end)
-
 BtnBackToMenu.MouseButton1Click:Connect(function() SkinsScroll.Visible = false ScrollFrame.Visible = true end)
 
--- ==========================================
--- الأزرار الرئيسية والميزات
--- ==========================================
 local Features = {
-    GodMode = false, Fly = false, Invisible = false, InfJump = false,
+    GodMode = false, Fly = false, Invisible = false, SSInvisPos = nil,
     Ghost = false, FakeMe = false, CustomSpeed = false, SpeedValue = 50, CustomJump = false, JumpValue = 100
 }
-local FakeClone = nil
 
 local function CreateInputRow(text, defaultValue, parent)
     local Row = Instance.new("Frame")
@@ -433,13 +384,12 @@ end
 
 local BtnGod = CreateBaseButton("God Mode & Anti-Ragdoll: OFF", ScrollFrame)
 local BtnFly = CreateBaseButton("Fly: OFF", ScrollFrame)
-local BtnInvis = CreateBaseButton("Sub: Invisible: OFF", ScrollFrame)
-BtnInvis.Visible = false 
-BtnInvis.Size = UDim2.new(0.8, 0, 0, 30)
-BtnInvis.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+local BtnInvis = CreateBaseButton("SS Invisibility (Need Fly): OFF", ScrollFrame)
+BtnInvis.Visible = true 
+BtnInvis.Size = UDim2.new(0.9, 0, 0, 35)
+BtnInvis.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 
 local BtnInfJump = CreateBaseButton("Infinite Jump: OFF", ScrollFrame)
-local BtnGhost = CreateBaseButton("Ghost Mode: OFF", ScrollFrame)
 local BtnFakeMe = CreateBaseButton("Fake Me (Desync): OFF", ScrollFrame)
 
 local BtnSpeed, BoxSpeed = CreateInputRow("Walk Speed: OFF", 50, ScrollFrame)
@@ -449,23 +399,22 @@ local BtnSkinsMenu = CreateBaseButton("منيو السكنات", ScrollFrame)
 BtnSkinsMenu.TextColor3 = Color3.fromRGB(0, 212, 255)
 BtnSkinsMenu.MouseButton1Click:Connect(function() ScrollFrame.Visible = false SkinsScroll.Visible = true end)
 
--- نظام التحديث المستمر (هنا السر لحل مشكلة الاختفاء)
+-- Loop System: تثبيت السكن وإعدادات السيرفر
 local RenderLoop = RunService.RenderStepped:Connect(function()
     local char = Player.Character
     if not char then return end
+
+    -- تثبيت السكن غصب عن الماب إذا كان مفعل
+    if ActiveSkinData then
+        pcall(function() ForceApplySkin(char, ActiveSkinData) end)
+    end
     
-    -- إجبار الاختفاء (حتى لو اللعبة حاولت ترجعك)
-    if Features.Invisible then
-        for _, v in pairs(char:GetDescendants()) do
-            if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then 
-                v.Transparency = 1 
-            elseif v:IsA("Decal") then
-                v.Transparency = 1
-            elseif v:IsA("Accessory") then
-                local handle = v:FindFirstChild("Handle")
-                if handle then handle.Transparency = 1 end
-            end
-        end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    
+    -- نظام الاختفاء السيرفر سايد (نقل الجسم بعيداً)
+    if Features.Invisible and hrp and Features.Fly then
+        -- السيرفر يشوفك في السماء، والكاميرا تتحرك بحرية معاك محلياً
+        hrp.CFrame = CFrame.new(0, 999999, 0)
     end
 
     local hum = char:FindFirstChild("Humanoid")
@@ -478,12 +427,6 @@ local RenderLoop = RunService.RenderStepped:Connect(function()
             hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
             hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
         end)
-    end
-
-    if Features.Ghost then
-        for _, v in pairs(char:GetDescendants()) do
-            if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then v.CanCollide = false end
-        end
     end
 
     if Features.CustomSpeed then hum.WalkSpeed = Features.SpeedValue end
@@ -501,21 +444,6 @@ BtnFly.MouseButton1Click:Connect(function()
     Features.Fly = not Features.Fly
     BtnFly.Text = Features.Fly and "Fly: ON" or "Fly: OFF"
     BtnFly.TextColor3 = Features.Fly and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
-    
-    BtnInvis.Visible = Features.Fly
-    
-    if not Features.Fly and Features.Invisible then
-        Features.Invisible = false
-        BtnInvis.Text = "Sub: Invisible: OFF"
-        BtnInvis.TextColor3 = Color3.fromRGB(200, 200, 200)
-        local char = Player.Character
-        if char then
-            for _, v in pairs(char:GetDescendants()) do
-                if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then v.Transparency = 0 
-                elseif v:IsA("Decal") then v.Transparency = 0 end
-            end
-        end
-    end
     
     local char = Player.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -538,7 +466,12 @@ BtnFly.MouseButton1Click:Connect(function()
             if UIS:IsKeyDown(Enum.KeyCode.Z) then move = move - Vector3.new(0,1,0) end 
             
             hrp.Velocity = Vector3.new(0,0,0)
-            hrp.CFrame = hrp.CFrame + (move * speed)
+            -- إذا كان الاختفاء شغال، الموفمنت تكون وهمية بس عشان تتحرك الكاميرا لك
+            if not Features.Invisible then
+                hrp.CFrame = hrp.CFrame + (move * speed)
+            else
+                workspace.CurrentCamera.CFrame = workspace.CurrentCamera.CFrame + (move * speed)
+            end
         end)
     else
         char.Humanoid.PlatformStand = false
@@ -548,15 +481,18 @@ end)
 
 BtnInvis.MouseButton1Click:Connect(function()
     Features.Invisible = not Features.Invisible
-    BtnInvis.Text = Features.Invisible and "Sub: Invisible: ON" or "Sub: Invisible: OFF"
+    BtnInvis.Text = Features.Invisible and "SS Invisibility (Need Fly): ON" or "SS Invisibility (Need Fly): OFF"
     BtnInvis.TextColor3 = Features.Invisible and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
     
-    -- الإرجاع لو طفاه
-    if not Features.Invisible and Player.Character then
-        for _, v in pairs(Player.Character:GetDescendants()) do
-            if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then v.Transparency = 0 
-            elseif v:IsA("Decal") then v.Transparency = 0 end
-        end
+    local char = Player.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if Features.Invisible and not Features.Fly then
+        Notify("تنبيه!", "الاختفاء القوي يتطلب تشغيل الطيران (Fly) عشان ما تطيح وتموت.", Color3.fromRGB(255, 100, 100))
+    end
+    
+    -- إرجاع اللاعب للأرض لو طفى الاختفاء
+    if not Features.Invisible and hrp then
+        hrp.CFrame = workspace.CurrentCamera.CFrame
     end
 end)
 
@@ -570,12 +506,6 @@ local JumpLoop = UIS.JumpRequest:Connect(function()
     if Features.InfJump and Player.Character and Player.Character:FindFirstChildOfClass("Humanoid") then
         Player.Character:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.Jumping)
     end
-end)
-
-BtnGhost.MouseButton1Click:Connect(function()
-    Features.Ghost = not Features.Ghost
-    BtnGhost.Text = Features.Ghost and "Ghost Mode: ON" or "Ghost Mode: OFF"
-    BtnGhost.TextColor3 = Features.Ghost and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
 end)
 
 BtnFakeMe.MouseButton1Click:Connect(function()
