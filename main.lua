@@ -1,4 +1,4 @@
--- [[ Zoko Hub V9 - The Scare Edition (Fixes + Jump Scare) ]]
+-- [[ Zoko Hub V10 - The Ultimate Controller (Fly Fix, Image Fix, Scare Button UI) ]]
 
 local Player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -36,7 +36,7 @@ Stroke.Thickness = 2
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.BackgroundTransparency = 1
-Title.Text = "ZOKO HUB V9"
+Title.Text = "ZOKO HUB V10"
 Title.TextColor3 = Color3.fromRGB(0, 212, 255)
 Title.Font = Enum.Font.GothamBlack
 Title.TextSize = 22
@@ -164,10 +164,19 @@ TargetUser.TextColor3 = Color3.fromRGB(150, 150, 150)
 TargetUser.Font = Enum.Font.GothamMedium
 TargetUser.TextSize = 12
 
-local function CreateControlButton(text, pos, color)
-    local btn = Instance.new("TextButton", ControlFrame)
-    btn.Size = UDim2.new(0.8, 0, 0, 30)
-    btn.Position = pos
+-- ترتيب الأزرار التلقائي عشان ما يختفي أي زر
+local ControlButtonsFrame = Instance.new("Frame", ControlFrame)
+ControlButtonsFrame.Size = UDim2.new(1, 0, 0, 180)
+ControlButtonsFrame.Position = UDim2.new(0, 0, 0, 145)
+ControlButtonsFrame.BackgroundTransparency = 1
+
+local ControlListLayout = Instance.new("UIListLayout", ControlButtonsFrame)
+ControlListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+ControlListLayout.Padding = UDim.new(0, 6)
+
+local function CreateControlButton(text, color)
+    local btn = Instance.new("TextButton", ControlButtonsFrame)
+    btn.Size = UDim2.new(0.85, 0, 0, 30)
     btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
     btn.Text = text
     btn.TextColor3 = color
@@ -177,11 +186,11 @@ local function CreateControlButton(text, pos, color)
     return btn
 end
 
-local BtnCmdFling = CreateControlButton("Fling (تطيير)", UDim2.new(0.1, 0, 0, 145), Color3.fromRGB(255, 80, 80))
-local BtnCmdTp = CreateControlButton("Teleport (انتقال)", UDim2.new(0.1, 0, 0, 180), Color3.fromRGB(80, 200, 255))
-local BtnCmdBring = CreateControlButton("Bring (سحب)", UDim2.new(0.1, 0, 0, 215), Color3.fromRGB(255, 200, 80))
-local BtnCmdSpec = CreateControlButton("Spectate (مشاهدة)", UDim2.new(0.1, 0, 0, 250), Color3.fromRGB(100, 255, 100))
-local BtnCmdScare = CreateControlButton("Scare (تخويف)", UDim2.new(0.1, 0, 0, 285), Color3.fromRGB(200, 100, 255))
+local BtnCmdFling = CreateControlButton("Fling (تطيير)", Color3.fromRGB(255, 80, 80))
+local BtnCmdTp = CreateControlButton("Teleport (انتقال)", Color3.fromRGB(80, 200, 255))
+local BtnCmdBring = CreateControlButton("Bring (سحب)", Color3.fromRGB(255, 200, 80))
+local BtnCmdSpec = CreateControlButton("Spectate (مشاهدة)", Color3.fromRGB(100, 255, 100))
+local BtnCmdScare = CreateControlButton("Scare (تخويف)", Color3.fromRGB(200, 100, 255))
 
 local BtnCloseControl = Instance.new("TextButton", ControlFrame)
 BtnCloseControl.Size = UDim2.new(0, 25, 0, 25)
@@ -252,8 +261,10 @@ local function OpenControlPanel(plr)
     TargetDisplay.Text = plr.DisplayName
     TargetUser.Text = "@" .. plr.Name
     pcall(function()
-        TargetImage.Image = game.Players:GetUserThumbnailAsync(plr.UserId, Enum.ThumbnailType.AvatarHeadShot, Enum.ThumbnailSize.Size150x150)
-        SpecImage.Image = TargetImage.Image
+        -- تصليح سحب الصورة (الحين تشتغل 100%)
+        local thumbContent, isReady = game.Players:GetUserThumbnailAsync(plr.UserId, Enum.ThumbnailType.AvatarHeadShot, Enum.ThumbnailSize.Size150x150)
+        TargetImage.Image = thumbContent
+        SpecImage.Image = thumbContent
     end)
     SpecName.Text = plr.DisplayName
     ControlFrame.Visible = true
@@ -275,7 +286,6 @@ BtnCmdFling.MouseButton1Click:Connect(function()
             local startPos = myHRP.CFrame
             Notify("Fling", "جاري تطيير " .. TargetPlayer.DisplayName .. "...", Color3.fromRGB(255, 50, 50))
             
-            -- تغيير طريقة الفلينق لتكون أكثر استقراراً
             local bv = Instance.new("BodyVelocity")
             bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
             bv.Velocity = Vector3.new(0, 50, 0)
@@ -304,7 +314,6 @@ BtnCmdFling.MouseButton1Click:Connect(function()
 end)
 
 BtnCmdBring.MouseButton1Click:Connect(function()
-    -- محاولة السحب (العديد من الألعاب تمنع نقل لاعبين آخرين، لذلك نحاول دفعه)
     if TargetPlayer and TargetPlayer.Character and TargetPlayer.Character:FindFirstChild("HumanoidRootPart") and Player.Character then
         local targetHRP = TargetPlayer.Character.HumanoidRootPart
         local myHRP = Player.Character:FindFirstChild("HumanoidRootPart")
@@ -313,7 +322,6 @@ BtnCmdBring.MouseButton1Click:Connect(function()
             Notify("Bring", "محاولة سحب " .. TargetPlayer.DisplayName .. " لك...", Color3.fromRGB(255, 200, 80))
             
             local spinLoop = RunService.Heartbeat:Connect(function()
-                -- الدوران حوله ودفعه نحوك
                 myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, 1)
                 myHRP.Velocity = (myPos.Position - targetHRP.Position).Unit * 100
             end)
@@ -355,25 +363,21 @@ BtnCmdScare.MouseButton1Click:Connect(function()
             local originalPos = myHRP.CFrame
             Notify("Scare", "جاري تخويف " .. TargetPlayer.DisplayName .. "!", Color3.fromRGB(200, 100, 255))
             
-            -- 1. الظهور أمامه لمدة 3 ثواني
             local scareLoop = RunService.Heartbeat:Connect(function()
                if targetHRP then
-                   myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, -3) * CFrame.Angles(0, math.pi, 0) -- مواجه له
+                   myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, -3) * CFrame.Angles(0, math.pi, 0)
                end
             end)
             task.wait(3)
             scareLoop:Disconnect()
             
-            -- 2. الاختفاء لمدة 3 ثواني (ننقلك لمكان بعيد)
             myHRP.CFrame = CFrame.new(0, 99999, 0)
             task.wait(3)
             
-            -- 3. العودة لمكانك
             myHRP.CFrame = originalPos
         end
     end
 end)
-
 
 -- ==========================================
 -- الأزرار الرئيسية والميزات الأساسية
@@ -482,8 +486,8 @@ BtnWand.MouseButton1Click:Connect(function()
     end
 end)
 
--- نظام الطيران (Fly)
-local FlyLoop
+-- نظام الطيران الفعلي (Real Fly System)
+local FlyLoop, bg, bv
 BtnFly.MouseButton1Click:Connect(function()
     Features.Fly = not Features.Fly
     BtnFly.Text = Features.Fly and "Fly (Shift/Q/Z): ON" or "Fly (Shift/Q/Z): OFF"
@@ -495,25 +499,42 @@ BtnFly.MouseButton1Click:Connect(function()
 
     if Features.Fly then
         char.Humanoid.PlatformStand = true
+        
+        -- إنشاء قوة فيزيائية عشان ما يطيحك الماب
+        bg = Instance.new("BodyGyro", hrp)
+        bg.P = 9e4
+        bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
+        bg.cframe = hrp.CFrame
+        
+        bv = Instance.new("BodyVelocity", hrp)
+        bv.velocity = Vector3.new(0, 0, 0)
+        bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
+
         FlyLoop = RunService.RenderStepped:Connect(function()
             local cam = workspace.CurrentCamera
             local move = Vector3.new(0,0,0)
-            local speed = 2.0 
+            local speed = 50 
             
-            if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then speed = 8.0 end 
+            if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then speed = 150 end 
             
             if UIS:IsKeyDown(Enum.KeyCode.W) then move = move + cam.CFrame.LookVector end
             if UIS:IsKeyDown(Enum.KeyCode.S) then move = move - cam.CFrame.LookVector end
             if UIS:IsKeyDown(Enum.KeyCode.D) then move = move + cam.CFrame.RightVector end
             if UIS:IsKeyDown(Enum.KeyCode.A) then move = move - cam.CFrame.RightVector end
-            if UIS:IsKeyDown(Enum.KeyCode.Q) then move = move + Vector3.new(0,1,0) end 
-            if UIS:IsKeyDown(Enum.KeyCode.Z) then move = move - Vector3.new(0,1,0) end 
+            if UIS:IsKeyDown(Enum.KeyCode.Q) then move = move + Vector3.new(0, 1, 0) end 
+            if UIS:IsKeyDown(Enum.KeyCode.Z) then move = move - Vector3.new(0, 1, 0) end 
             
-            hrp.Velocity = Vector3.new(0,0,0)
-            hrp.CFrame = hrp.CFrame + (move * speed)
+            bg.cframe = cam.CFrame
+            if move.Magnitude > 0 then
+                bv.velocity = move.Unit * speed
+            else
+                bv.velocity = Vector3.new(0, 0, 0)
+            end
         end)
     else
         char.Humanoid.PlatformStand = false
+        if bg then bg:Destroy() end
+        if bv then bv:Destroy() end
         if FlyLoop then FlyLoop:Disconnect() end
     end
 end)
@@ -603,7 +624,6 @@ BtnNoclip.MouseButton1Click:Connect(function()
 end)
 
 BtnSuperHit.MouseButton1Click:Connect(function()
-    -- This button left here to not break UI logic, but Fling is now in wand.
     Features.SuperHit = not Features.SuperHit
     BtnSuperHit.Text = Features.SuperHit and "Super Hero Hit (Fling): ON" or "Super Hero Hit (Fling): OFF"
     BtnSuperHit.TextColor3 = Features.SuperHit and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
@@ -702,6 +722,9 @@ RestartBtn.MouseButton1Click:Connect(function()
     if JumpLoop then JumpLoop:Disconnect() end
     if SpectateLoop then SpectateLoop:Disconnect() end
     if FlyLoop then FlyLoop:Disconnect() end
+    if bg then bg:Destroy() end
+    if bv then bv:Destroy() end
+    
     workspace.CurrentCamera.CameraSubject = Player.Character:WaitForChild("Humanoid")
     ScreenGui:Destroy()
     
