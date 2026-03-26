@@ -1,4 +1,4 @@
--- [[ Zoko Hub V12 - The Vehicle & Fly-Noclip Edition ]]
+-- [[ Zoko Hub V13 - The Perfect Vehicle Fly & Smart UI ]]
 
 local Player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -36,7 +36,7 @@ Stroke.Thickness = 2
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.BackgroundTransparency = 1
-Title.Text = "ZOKO HUB V12"
+Title.Text = "ZOKO HUB V13"
 Title.TextColor3 = Color3.fromRGB(0, 212, 255)
 Title.Font = Enum.Font.GothamBlack
 Title.TextSize = 22
@@ -419,7 +419,11 @@ end
 
 local BtnWand = CreateButton("Control Wand (أداة التحكم): OFF", ScrollFrame)
 local BtnFly = CreateButton("Fly (Shift/Q/Z): OFF", ScrollFrame)
+
+-- زر الـ Fly Noclip الحين مخفي بالأساس
 local BtnFlyNoclip = CreateButton("Fly Noclip (اختراق أثناء الطيران): OFF", ScrollFrame)
+BtnFlyNoclip.Visible = false
+
 local BtnGod = CreateButton("God Mode & No Ragdoll: OFF", ScrollFrame)
 local BtnNoclip = CreateButton("Noclip (Anti-Rubberband): OFF", ScrollFrame)
 local BtnInstant = CreateButton("Instant Interact (No Hold): OFF", ScrollFrame)
@@ -464,7 +468,7 @@ BtnWand.MouseButton1Click:Connect(function()
     end
 end)
 
--- نظام الطيران الذكي (يتحكم بالسيارات أو الشخصية)
+-- نظام الطيران الذكي (طيران خارق للسيارات والشخصية)
 local FlyLoop, bg, bv, FlyNoclipLoop
 BtnFly.MouseButton1Click:Connect(function()
     Features.Fly = not Features.Fly
@@ -474,7 +478,9 @@ BtnFly.MouseButton1Click:Connect(function()
     local char = Player.Character
     if not char then return end
 
-    -- التحقق إذا اللاعب داخل سيارة
+    -- إظهار وإخفاء زر اختراق الطيران
+    BtnFlyNoclip.Visible = Features.Fly
+
     local targetPart = char:FindFirstChild("HumanoidRootPart")
     local humanoid = char:FindFirstChild("Humanoid")
     local isVehicle = false
@@ -482,10 +488,6 @@ BtnFly.MouseButton1Click:Connect(function()
     if humanoid and humanoid.SeatPart then
         targetPart = humanoid.SeatPart
         isVehicle = true
-        -- إذا كانت السيارة لها أب أو نموذج رئيسي، نبحث عن القطعة الأساسية
-        if targetPart.Parent and targetPart.Parent:IsA("Model") and targetPart.Parent.PrimaryPart then
-            targetPart = targetPart.Parent.PrimaryPart
-        end
     end
 
     if not targetPart then return end
@@ -493,14 +495,15 @@ BtnFly.MouseButton1Click:Connect(function()
     if Features.Fly then
         if not isVehicle then char.Humanoid.PlatformStand = true end
         
+        -- رفع القوة لـ math.huge عشان السيارة ما تنزل نهائياً ويكون التحكم ثابت
         bg = Instance.new("BodyGyro", targetPart)
-        bg.P = 9e4
-        bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
+        bg.P = 9e5
+        bg.maxTorque = Vector3.new(math.huge, math.huge, math.huge)
         bg.cframe = targetPart.CFrame
         
         bv = Instance.new("BodyVelocity", targetPart)
         bv.velocity = Vector3.new(0, 0, 0)
-        bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
+        bv.maxForce = Vector3.new(math.huge, math.huge, math.huge)
 
         FlyLoop = RunService.RenderStepped:Connect(function()
             local cam = workspace.CurrentCamera
@@ -539,10 +542,19 @@ BtnFly.MouseButton1Click:Connect(function()
     end
 end)
 
--- نظام اختراق الجدران الخاص بالطيران (Fly Noclip)
+-- دالة للبحث عن المجسم الرئيسي للسيارة كاملة
+local function GetTopVehicle(seatPart)
+    local current = seatPart
+    while current.Parent and current.Parent ~= workspace do
+        current = current.Parent
+    end
+    return current
+end
+
+-- نظام اختراق الجدران الخاص بالطيران (Fly Noclip للسيارة والشخصية)
 BtnFlyNoclip.MouseButton1Click:Connect(function()
     if not Features.Fly then
-        Notify("خطأ", "يجب تفعيل الطيران (Fly) أولاً لاستخدام هذه الميزة!", Color3.fromRGB(255, 50, 50))
+        Notify("تنبيه", "يجب تفعيل الطيران (Fly) أولاً!", Color3.fromRGB(255, 50, 50))
         return
     end
 
@@ -553,18 +565,19 @@ BtnFlyNoclip.MouseButton1Click:Connect(function()
     if Features.FlyNoclip then
         FlyNoclipLoop = RunService.Stepped:Connect(function()
             if Features.Fly and Player.Character then
-                -- نخترق الشخصية
+                -- اختراق الشخصية
                 for _, part in pairs(Player.Character:GetDescendants()) do
-                    if part:IsA("BasePart") and part.CanCollide then
+                    if part:IsA("BasePart") then
                         part.CanCollide = false
                     end
                 end
                 
-                -- إذا كان في سيارة، نخترق أجزاء السيارة بعد
+                -- اختراق كل قطع السيارة
                 local hum = Player.Character:FindFirstChild("Humanoid")
-                if hum and hum.SeatPart and hum.SeatPart.Parent then
-                    for _, part in pairs(hum.SeatPart.Parent:GetDescendants()) do
-                        if part:IsA("BasePart") and part.CanCollide then
+                if hum and hum.SeatPart then
+                    local fullVehicle = GetTopVehicle(hum.SeatPart)
+                    for _, part in pairs(fullVehicle:GetDescendants()) do
+                        if part:IsA("BasePart") then
                             part.CanCollide = false
                         end
                     end
