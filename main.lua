@@ -1,10 +1,12 @@
--- [[ Zoko Hub V7.3 - Anti-Rubberband Noclip & Perfect Anti-Ragdoll ]]
+-- [[ Zoko Hub V8 - The Controller Edition (Fly, Control Wand, Spectate) ]]
 
 local Player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
 local VirtualUser = game:GetService("VirtualUser")
+local TweenService = game:GetService("TweenService")
+local Mouse = Player:GetMouse()
 
 if _G.ZokoUI then pcall(function() _G.ZokoUI:Destroy() end) end
 
@@ -14,6 +16,9 @@ ScreenGui.Parent = Player:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 _G.ZokoUI = ScreenGui
 
+-- ==========================================
+-- الواجهة الرئيسية
+-- ==========================================
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 0, 0, 0)
 MainFrame.Position = UDim2.new(0.5, -135, 0.5, -200)
@@ -31,7 +36,7 @@ Stroke.Thickness = 2
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.BackgroundTransparency = 1
-Title.Text = "ZOKO HUB V7.3"
+Title.Text = "ZOKO HUB V8"
 Title.TextColor3 = Color3.fromRGB(0, 212, 255)
 Title.Font = Enum.Font.GothamBlack
 Title.TextSize = 22
@@ -69,7 +74,7 @@ ScrollFrame.Position = UDim2.new(0, 0, 0, 45)
 ScrollFrame.BackgroundTransparency = 1
 ScrollFrame.ScrollBarThickness = 4
 ScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(0, 212, 255)
-ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 450)
+ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 550)
 ScrollFrame.Parent = MainFrame
 
 local ListLayout = Instance.new("UIListLayout")
@@ -119,11 +124,221 @@ local function Notify(titleText, descText, color)
 end
 
 -- ==========================================
--- الأزرار الرئيسية والميزات
+-- لوحة التحكم باللاعبين والمشاهدة (Spectate & Control)
+-- ==========================================
+local TargetPlayer = nil
+local SpectateLoop = nil
+
+-- لوحة التحكم المنبثقة
+local ControlFrame = Instance.new("Frame")
+ControlFrame.Size = UDim2.new(0, 250, 0, 300)
+ControlFrame.Position = UDim2.new(0.5, 150, 0.5, -150)
+ControlFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+ControlFrame.Visible = false
+ControlFrame.Parent = ScreenGui
+Instance.new("UICorner", ControlFrame).CornerRadius = UDim.new(0, 12)
+local CStroke = Instance.new("UIStroke", ControlFrame)
+CStroke.Color = Color3.fromRGB(255, 100, 100)
+CStroke.Thickness = 2
+MakeDraggable(ControlFrame)
+
+local TargetImage = Instance.new("ImageLabel", ControlFrame)
+TargetImage.Size = UDim2.new(0, 80, 0, 80)
+TargetImage.Position = UDim2.new(0.5, -40, 0, 15)
+TargetImage.BackgroundTransparency = 1
+Instance.new("UICorner", TargetImage).CornerRadius = UDim.new(1, 0)
+
+local TargetDisplay = Instance.new("TextLabel", ControlFrame)
+TargetDisplay.Size = UDim2.new(1, 0, 0, 20)
+TargetDisplay.Position = UDim2.new(0, 0, 0, 100)
+TargetDisplay.BackgroundTransparency = 1
+TargetDisplay.TextColor3 = Color3.fromRGB(255, 255, 255)
+TargetDisplay.Font = Enum.Font.GothamBold
+TargetDisplay.TextSize = 16
+
+local TargetUser = Instance.new("TextLabel", ControlFrame)
+TargetUser.Size = UDim2.new(1, 0, 0, 15)
+TargetUser.Position = UDim2.new(0, 0, 0, 120)
+TargetUser.BackgroundTransparency = 1
+TargetUser.TextColor3 = Color3.fromRGB(150, 150, 150)
+TargetUser.Font = Enum.Font.GothamMedium
+TargetUser.TextSize = 12
+
+local function CreateControlButton(text, pos, color)
+    local btn = Instance.new("TextButton", ControlFrame)
+    btn.Size = UDim2.new(0.8, 0, 0, 30)
+    btn.Position = pos
+    btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    btn.Text = text
+    btn.TextColor3 = color
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 14
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+    return btn
+end
+
+local BtnCmdFling = CreateControlButton("Fling (تطيير)", UDim2.new(0.1, 0, 0, 145), Color3.fromRGB(255, 80, 80))
+local BtnCmdTp = CreateControlButton("Teleport (انتقال)", UDim2.new(0.1, 0, 0, 180), Color3.fromRGB(80, 200, 255))
+local BtnCmdBring = CreateControlButton("Bring (سحب فيزيائي)", UDim2.new(0.1, 0, 0, 215), Color3.fromRGB(255, 200, 80))
+local BtnCmdSpec = CreateControlButton("Spectate (مشاهدة)", UDim2.new(0.1, 0, 0, 250), Color3.fromRGB(100, 255, 100))
+
+local BtnCloseControl = Instance.new("TextButton", ControlFrame)
+BtnCloseControl.Size = UDim2.new(0, 25, 0, 25)
+BtnCloseControl.Position = UDim2.new(1, -30, 0, 5)
+BtnCloseControl.BackgroundTransparency = 1
+BtnCloseControl.Text = "X"
+BtnCloseControl.TextColor3 = Color3.fromRGB(200, 50, 50)
+BtnCloseControl.Font = Enum.Font.GothamBold
+BtnCloseControl.TextSize = 18
+BtnCloseControl.MouseButton1Click:Connect(function() ControlFrame.Visible = false end)
+
+-- لوحة المشاهدة (Spectate UI) - تحت في النص
+local SpecFrame = Instance.new("Frame")
+SpecFrame.Size = UDim2.new(0, 200, 0, 70)
+SpecFrame.Position = UDim2.new(0.5, -100, 0.9, -80)
+SpecFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+SpecFrame.BackgroundTransparency = 0.3
+SpecFrame.Visible = false
+SpecFrame.Parent = ScreenGui
+Instance.new("UICorner", SpecFrame).CornerRadius = UDim.new(0, 10)
+
+local SpecImage = Instance.new("ImageLabel", SpecFrame)
+SpecImage.Size = UDim2.new(0, 50, 0, 50)
+SpecImage.Position = UDim2.new(0, 10, 0.5, -25)
+SpecImage.BackgroundTransparency = 1
+Instance.new("UICorner", SpecImage).CornerRadius = UDim.new(1, 0)
+
+local SpecName = Instance.new("TextLabel", SpecFrame)
+SpecName.Size = UDim2.new(0, 100, 1, 0)
+SpecName.Position = UDim2.new(0, 70, 0, 0)
+SpecName.BackgroundTransparency = 1
+SpecName.TextColor3 = Color3.fromRGB(255, 255, 255)
+SpecName.Font = Enum.Font.GothamBold
+SpecName.TextSize = 14
+SpecName.TextXAlignment = Enum.TextXAlignment.Left
+
+local SpecClose = Instance.new("TextButton", SpecFrame)
+SpecClose.Size = UDim2.new(0, 30, 0, 30)
+SpecClose.Position = UDim2.new(1, -40, 0.5, -15)
+SpecClose.BackgroundColor3 = Color3.fromRGB(100, 100, 100) -- رصاصي
+SpecClose.Text = "X"
+SpecClose.TextColor3 = Color3.fromRGB(255, 255, 255)
+SpecClose.Font = Enum.Font.GothamBold
+SpecClose.TextSize = 16
+Instance.new("UICorner", SpecClose).CornerRadius = UDim.new(0, 6)
+
+-- أنيميشن زر الإغلاق في المشاهدة
+SpecClose.MouseEnter:Connect(function()
+    TweenService:Create(SpecClose, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255, 50, 50), Size = UDim2.new(0, 34, 0, 34), Position = UDim2.new(1, -42, 0.5, -17)}):Play()
+end)
+SpecClose.MouseLeave:Connect(function()
+    TweenService:Create(SpecClose, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(100, 100, 100), Size = UDim2.new(0, 30, 0, 30), Position = UDim2.new(1, -40, 0.5, -15)}):Play()
+end)
+
+local function StopSpectating()
+    if SpectateLoop then SpectateLoop:Disconnect() SpectateLoop = nil end
+    workspace.CurrentCamera.CameraSubject = Player.Character:WaitForChild("Humanoid")
+    SpecFrame.Visible = false
+    MainFrame.Visible = true
+    ControlFrame.Visible = true
+end
+SpecClose.MouseButton1Click:Connect(StopSpectating)
+
+local function OpenControlPanel(plr)
+    TargetPlayer = plr
+    TargetDisplay.Text = plr.DisplayName
+    TargetUser.Text = "@" .. plr.Name
+    pcall(function()
+        TargetImage.Image = game.Players:GetUserThumbnailAsync(plr.UserId, Enum.ThumbnailType.AvatarHeadShot, Enum.ThumbnailSize.Size150x150)
+        SpecImage.Image = TargetImage.Image
+    end)
+    SpecName.Text = plr.DisplayName
+    ControlFrame.Visible = true
+end
+
+-- أوامر لوحة التحكم
+BtnCmdTp.MouseButton1Click:Connect(function()
+    if TargetPlayer and TargetPlayer.Character and TargetPlayer.Character:FindFirstChild("HumanoidRootPart") and Player.Character then
+        Player.Character.HumanoidRootPart.CFrame = TargetPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, -3)
+        Notify("Teleport", "تم الانتقال إلى " .. TargetPlayer.DisplayName)
+    end
+end)
+
+BtnCmdFling.MouseButton1Click:Connect(function()
+    if TargetPlayer and TargetPlayer.Character and TargetPlayer.Character:FindFirstChild("HumanoidRootPart") and Player.Character then
+        local targetHRP = TargetPlayer.Character.HumanoidRootPart
+        local myHRP = Player.Character:FindFirstChild("HumanoidRootPart")
+        if myHRP then
+            local startPos = myHRP.CFrame
+            local spinLoop
+            Notify("Fling", "جاري تطيير " .. TargetPlayer.DisplayName .. "...", Color3.fromRGB(255, 50, 50))
+            
+            spinLoop = RunService.Heartbeat:Connect(function()
+                myHRP.CFrame = targetHRP.CFrame
+                myHRP.Velocity = Vector3.new(0, 50, 0)
+                myHRP.RotVelocity = Vector3.new(10000, 10000, 10000) -- دوران خارق لضربه
+            end)
+            
+            task.wait(1.5) -- يطيره لمدة ثانية ونص
+            if spinLoop then spinLoop:Disconnect() end
+            myHRP.Velocity = Vector3.new(0,0,0)
+            myHRP.RotVelocity = Vector3.new(0,0,0)
+            myHRP.CFrame = startPos -- يرجعك لمكانك
+        end
+    end
+end)
+
+BtnCmdBring.MouseButton1Click:Connect(function()
+    -- السحب الفيزيائي (يطيره لجهتك بقوة)
+    if TargetPlayer and TargetPlayer.Character and TargetPlayer.Character:FindFirstChild("HumanoidRootPart") and Player.Character then
+        local targetHRP = TargetPlayer.Character.HumanoidRootPart
+        local myHRP = Player.Character:FindFirstChild("HumanoidRootPart")
+        if myHRP then
+            local myPos = myHRP.CFrame
+            local spinLoop
+            Notify("Bring", "محاولة سحب " .. TargetPlayer.DisplayName .. " لك...", Color3.fromRGB(255, 200, 80))
+            
+            spinLoop = RunService.Heartbeat:Connect(function()
+                myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, -1, 0)
+                myHRP.Velocity = (myPos.Position - targetHRP.Position).Unit * 150 + Vector3.new(0, 50, 0)
+            end)
+            
+            task.wait(1) 
+            if spinLoop then spinLoop:Disconnect() end
+            myHRP.Velocity = Vector3.new(0,0,0)
+            myHRP.CFrame = myPos
+        end
+    end
+end)
+
+BtnCmdSpec.MouseButton1Click:Connect(function()
+    if TargetPlayer and TargetPlayer.Character and TargetPlayer.Character:FindFirstChild("Humanoid") then
+        workspace.CurrentCamera.CameraSubject = TargetPlayer.Character.Humanoid
+        MainFrame.Visible = false
+        ControlFrame.Visible = false
+        SpecFrame.Visible = true
+        Notify("Spectate", "أنت الآن تشاهد " .. TargetPlayer.DisplayName)
+        
+        -- تأكد أنه يكمل مشاهدة لو الشخص رسبن
+        if SpectateLoop then SpectateLoop:Disconnect() end
+        SpectateLoop = RunService.RenderStepped:Connect(function()
+            if TargetPlayer and TargetPlayer.Character and TargetPlayer.Character:FindFirstChild("Humanoid") then
+                workspace.CurrentCamera.CameraSubject = TargetPlayer.Character.Humanoid
+            else
+                StopSpectating()
+                Notify("Spectate", "اللاعب مات أو طلع من اللعبة.", Color3.fromRGB(255, 50, 50))
+            end
+        end)
+    end
+end)
+
+
+-- ==========================================
+-- الأزرار الرئيسية والميزات الأساسية
 -- ==========================================
 local Features = {
-    GodMode = false, InfJump = false, Noclip = false, 
-    InstantPrompt = false, SuperHit = false, AntiAFK = true,
+    Fly = false, GodMode = false, InfJump = false, Noclip = false, 
+    InstantPrompt = false, SuperHit = false, AntiAFK = true, ControlWand = false,
     CustomSpeed = false, SpeedValue = 50, CustomJump = false, JumpValue = 100
 }
 
@@ -173,6 +388,8 @@ local function CreateInputRow(text, defaultValue, parent)
     return ToggleBtn, InputBox
 end
 
+local BtnWand = CreateButton("Control Wand (أداة التحكم): OFF", ScrollFrame)
+local BtnFly = CreateButton("Fly (Shift/Q/Z): OFF", ScrollFrame)
 local BtnGod = CreateButton("God Mode & No Ragdoll: OFF", ScrollFrame)
 local BtnNoclip = CreateButton("Noclip (Anti-Rubberband): OFF", ScrollFrame)
 local BtnInstant = CreateButton("Instant Interact (No Hold): OFF", ScrollFrame)
@@ -185,34 +402,95 @@ local BtnSpeed, BoxSpeed = CreateInputRow("Walk Speed: OFF", 50, ScrollFrame)
 local BtnJump, BoxJump = CreateInputRow("Jump Power: OFF", 100, ScrollFrame)
 
 -- ==========================================
--- الأنظمة الأساسية (Loops)
+-- الأنظمة (Loops)
 -- ==========================================
 
--- نظام Noclip المضاد للإرجاع (Anti-Rubberband Bypass)
+-- نظام عصا التحكم (Control Wand)
+local currentWand = nil
+BtnWand.MouseButton1Click:Connect(function()
+    Features.ControlWand = not Features.ControlWand
+    BtnWand.Text = Features.ControlWand and "Control Wand (أداة التحكم): ON" or "Control Wand (أداة التحكم): OFF"
+    BtnWand.TextColor3 = Features.ControlWand and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
+    
+    if Features.ControlWand then
+        currentWand = Instance.new("Tool")
+        currentWand.RequiresHandle = false
+        currentWand.Name = "Zoko Control"
+        currentWand.ToolTip = "اضغط على لاعب لفتح لوحة التحكم"
+        currentWand.TextureId = "rbxassetid://100414902" -- أيقونة علم/صولجان
+        currentWand.Parent = Player.Backpack
+        
+        currentWand.Activated:Connect(function()
+            local target = Mouse.Target
+            if target and target.Parent then
+                local model = target.Parent
+                if not model:FindFirstChild("Humanoid") then model = model.Parent end
+                
+                if model and model:FindFirstChild("Humanoid") then
+                    local plr = game.Players:GetPlayerFromCharacter(model)
+                    if plr and plr ~= Player then
+                        OpenControlPanel(plr)
+                    end
+                end
+            end
+        end)
+    else
+        if currentWand then currentWand:Destroy() currentWand = nil end
+        ControlFrame.Visible = false
+    end
+end)
+
+-- نظام الطيران (Fly)
+local FlyLoop
+BtnFly.MouseButton1Click:Connect(function()
+    Features.Fly = not Features.Fly
+    BtnFly.Text = Features.Fly and "Fly (Shift/Q/Z): ON" or "Fly (Shift/Q/Z): OFF"
+    BtnFly.TextColor3 = Features.Fly and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
+    
+    local char = Player.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    if Features.Fly then
+        char.Humanoid.PlatformStand = true
+        FlyLoop = RunService.RenderStepped:Connect(function()
+            local cam = workspace.CurrentCamera
+            local move = Vector3.new(0,0,0)
+            local speed = 2.0 
+            
+            if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then speed = 8.0 end 
+            
+            if UIS:IsKeyDown(Enum.KeyCode.W) then move = move + cam.CFrame.LookVector end
+            if UIS:IsKeyDown(Enum.KeyCode.S) then move = move - cam.CFrame.LookVector end
+            if UIS:IsKeyDown(Enum.KeyCode.D) then move = move + cam.CFrame.RightVector end
+            if UIS:IsKeyDown(Enum.KeyCode.A) then move = move - cam.CFrame.RightVector end
+            if UIS:IsKeyDown(Enum.KeyCode.Q) then move = move + Vector3.new(0,1,0) end -- Q فوق
+            if UIS:IsKeyDown(Enum.KeyCode.Z) then move = move - Vector3.new(0,1,0) end -- Z تحت
+            
+            hrp.Velocity = Vector3.new(0,0,0)
+            hrp.CFrame = hrp.CFrame + (move * speed)
+        end)
+    else
+        char.Humanoid.PlatformStand = false
+        if FlyLoop then FlyLoop:Disconnect() end
+    end
+end)
+
+-- نظام Noclip المضاد للإرجاع
 local lastNoclipPos = nil
 local NoclipLoop = RunService.Stepped:Connect(function()
     if Features.Noclip and Player.Character then
         local hrp = Player.Character:FindFirstChild("HumanoidRootPart")
         local hum = Player.Character:FindFirstChild("Humanoid")
-        
         for _, part in pairs(Player.Character:GetDescendants()) do
-            if part:IsA("BasePart") and part.CanCollide then
-                part.CanCollide = false
-            end
+            if part:IsA("BasePart") and part.CanCollide then part.CanCollide = false end
         end
-
-        -- منع السيرفر من إرجاعك للخلف إذا كنت تخترق جدار
         if hrp and hum and hum.Health > 0 then
             if lastNoclipPos then
                 local dist = (hrp.Position - lastNoclipPos).Magnitude
-                -- إذا المسافة بين الفريم الماضي والحالي أكبر من 10 (يعني السيرفر سحبك لورا) وأقل من 80 (مو ريسباون)
-                if dist > 10 and dist < 80 then
-                    -- كسر أمر السيرفر وإرجاعك لمكان الاختراق بقوة!
-                    hrp.CFrame = CFrame.new(lastNoclipPos)
-                end
+                if dist > 10 and dist < 80 then hrp.CFrame = CFrame.new(lastNoclipPos) end
             end
             lastNoclipPos = hrp.Position
-            -- تغيير حالة اللاعب للمشي الوهمي لزيادة كسر حماية السيرفر
             hum:ChangeState(11) 
         end
     else
@@ -239,9 +517,7 @@ end
 
 Player.CharacterAdded:Connect(function(char)
     char.ChildAdded:Connect(function(child)
-        if child:IsA("Tool") and Features.SuperHit then
-            EnableFlingOnTool(child)
-        end
+        if child:IsA("Tool") and Features.SuperHit then EnableFlingOnTool(child) end
     end)
 end)
 
@@ -272,14 +548,10 @@ local RenderLoop = RunService.RenderStepped:Connect(function()
             hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
             hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
             hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
-            
-            -- كسر أمر الريقدول (لو السيرفر طيحك، توقف فوراً غصب)
             local currentState = hum:GetState()
             if currentState == Enum.HumanoidStateType.Ragdoll or currentState == Enum.HumanoidStateType.FallingDown then
                 hum:ChangeState(Enum.HumanoidStateType.GettingUp)
             end
-
-            -- زيادة الوزن لمنع الدفع
             if hrp then hrp.CustomPhysicalProperties = PhysicalProperties.new(100, 0.3, 0.5, 1, 1) end
         end)
     else
@@ -296,16 +568,11 @@ local function ToggleInstantInteract()
     if Features.InstantInteract then
         InstantInteractLoop = RunService.Heartbeat:Connect(function()
             for _, obj in pairs(workspace:GetDescendants()) do
-                if obj:IsA("ProximityPrompt") then
-                    obj.HoldDuration = 0
-                end
+                if obj:IsA("ProximityPrompt") then obj.HoldDuration = 0 end
             end
         end)
     else
-        if InstantInteractLoop then
-            InstantInteractLoop:Disconnect()
-            InstantInteractLoop = nil
-        end
+        if InstantInteractLoop then InstantInteractLoop:Disconnect() InstantInteractLoop = nil end
     end
 end
 
@@ -332,9 +599,7 @@ BtnSuperHit.MouseButton1Click:Connect(function()
     Features.SuperHit = not Features.SuperHit
     BtnSuperHit.Text = Features.SuperHit and "Super Hero Hit (Fling): ON" or "Super Hero Hit (Fling): OFF"
     BtnSuperHit.TextColor3 = Features.SuperHit and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
-    if Features.SuperHit then
-        Notify("Super Hit Activated", "امسك أي سلاح واضرب اللاعبين عشان يطيرون!", Color3.fromRGB(255, 100, 100))
-    end
+    if Features.SuperHit then Notify("Super Hit Activated", "امسك أي سلاح واضرب اللاعبين عشان يطيرون!", Color3.fromRGB(255, 100, 100)) end
 end)
 
 BtnInfJump.MouseButton1Click:Connect(function()
@@ -397,7 +662,6 @@ DevBtn.Font = Enum.Font.GothamMedium
 DevBtn.TextSize = 14
 DevBtn.Parent = MainFrame
 
--- تفعيل زر زوكو عشان ينسخ الرابط
 DevBtn.MouseButton1Click:Connect(function()
     local site = "http://45.137.98.42:5000/"
     if setclipboard then
@@ -424,13 +688,15 @@ RestartGlow.Transparency = 0.5
 RestartGlow.Thickness = 0.6
 RestartGlow.Parent = RestartBtn
 
--- تفعيل زر الريستارت
 RestartBtn.MouseButton1Click:Connect(function()
     if RenderLoop then RenderLoop:Disconnect() end
     if NoclipLoop then NoclipLoop:Disconnect() end
     if SuperHitLoop then SuperHitLoop:Disconnect() end
     if InstantInteractLoop then InstantInteractLoop:Disconnect() end
     if JumpLoop then JumpLoop:Disconnect() end
+    if SpectateLoop then SpectateLoop:Disconnect() end
+    if FlyLoop then FlyLoop:Disconnect() end
+    workspace.CurrentCamera.CameraSubject = Player.Character:WaitForChild("Humanoid")
     ScreenGui:Destroy()
     
     pcall(function()
