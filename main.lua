@@ -1,4 +1,4 @@
--- [[ Zoko Hub V7 - Clean Edition (Noclip, Super Hit, Instant Prompt) ]]
+-- [[ Zoko Hub V7.1 - Perfected Fling & Instant Interact ]]
 
 local Player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -31,7 +31,7 @@ Stroke.Thickness = 2
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.BackgroundTransparency = 1
-Title.Text = "ZOKO HUB V7"
+Title.Text = "ZOKO HUB V7.1"
 Title.TextColor3 = Color3.fromRGB(0, 212, 255)
 Title.Font = Enum.Font.GothamBlack
 Title.TextSize = 22
@@ -199,17 +199,47 @@ RunService.Stepped:Connect(function()
     end
 end)
 
--- نظام Super Hit (تحويل السلاح لقوة دافعة خارقة)
+-- نظام Super Hit المعدل (Fling)
+-- يراقب لمس السلاح للاعبين الثانيين ويعطيهم سرعة خيالية تدفهم
+local FlingConnections = {}
+
+local function EnableFlingOnTool(tool)
+    if not tool or not tool:FindFirstChild("Handle") then return end
+    local handle = tool.Handle
+    
+    local conn = handle.Touched:Connect(function(hit)
+        if Features.SuperHit and hit.Parent and hit.Parent:FindFirstChild("Humanoid") and hit.Parent.Name ~= Player.Name then
+            local enemyHRP = hit.Parent:FindFirstChild("HumanoidRootPart")
+            if enemyHRP then
+                enemyHRP.Velocity = Vector3.new(0, 500, 0) + (enemyHRP.Position - handle.Position).Unit * 5000
+                enemyHRP.RotVelocity = Vector3.new(9999, 9999, 9999)
+            end
+        end
+    end)
+    table.insert(FlingConnections, conn)
+end
+
+Player.CharacterAdded:Connect(function(char)
+    char.ChildAdded:Connect(function(child)
+        if child:IsA("Tool") and Features.SuperHit then
+            EnableFlingOnTool(child)
+        end
+    end)
+end)
+
+-- مراقبة الأدوات الموجودة حالياً
 RunService.Heartbeat:Connect(function()
     if Features.SuperHit and Player.Character then
         local tool = Player.Character:FindFirstChildOfClass("Tool")
-        if tool and tool:FindFirstChild("Handle") then
-            -- إعطاء السلاح سرعة دوران جنونية مخفية تطيّر أي شخص يلمسه
-            tool.Handle.AssemblyLinearVelocity = Vector3.new(0, 99999, 0)
-            tool.Handle.AssemblyAngularVelocity = Vector3.new(99999, 99999, 99999)
+        if tool and #FlingConnections == 0 then
+            EnableFlingOnTool(tool)
+        elseif not tool and #FlingConnections > 0 then
+             for _, conn in pairs(FlingConnections) do conn:Disconnect() end
+             FlingConnections = {}
         end
     end
 end)
+
 
 local RenderLoop = RunService.RenderStepped:Connect(function()
     local char = Player.Character
@@ -236,27 +266,30 @@ local RenderLoop = RunService.RenderStepped:Connect(function()
     if Features.CustomJump then hum.UseJumpPower = true hum.JumpPower = Features.JumpValue end
 end)
 
--- نظام Instant Interact (التفاعل الفوري)
-local function SetInstantPrompts()
-    for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("ProximityPrompt") then
-            obj.HoldDuration = 0
+-- نظام Instant Interact المعدل (تحديث مستمر لكل شيء)
+local InstantInteractLoop
+local function ToggleInstantInteract()
+    if Features.InstantInteract then
+        InstantInteractLoop = RunService.Heartbeat:Connect(function()
+            for _, obj in pairs(workspace:GetDescendants()) do
+                if obj:IsA("ProximityPrompt") then
+                    obj.HoldDuration = 0
+                end
+            end
+        end)
+    else
+        if InstantInteractLoop then
+            InstantInteractLoop:Disconnect()
+            InstantInteractLoop = nil
         end
     end
 end
-
-workspace.DescendantAdded:Connect(function(obj)
-    if Features.InstantInteract and obj:IsA("ProximityPrompt") then
-        task.wait(0.1)
-        obj.HoldDuration = 0
-    end
-end)
 
 BtnInstant.MouseButton1Click:Connect(function()
     Features.InstantInteract = not Features.InstantInteract
     BtnInstant.Text = Features.InstantInteract and "Instant Interact (No Hold): ON" or "Instant Interact (No Hold): OFF"
     BtnInstant.TextColor3 = Features.InstantInteract and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
-    if Features.InstantInteract then SetInstantPrompts() end
+    ToggleInstantInteract()
 end)
 
 BtnGod.MouseButton1Click:Connect(function()
