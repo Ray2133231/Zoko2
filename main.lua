@@ -45,7 +45,7 @@ Stroke.Thickness = 2
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.BackgroundTransparency = 1
-Title.Text = "Zoko Trainer V5"
+Title.Text = "Zoko Trainer V6"
 Title.TextColor3 = Color3.fromRGB(0, 212, 255)
 Title.Font = Enum.Font.GothamBlack
 Title.TextSize = 22
@@ -510,7 +510,7 @@ local Features = {
     Fly = false, FlyNoclip = false, GodMode = false, InfJump = false, Noclip = false, 
     InstantPrompt = false, SuperHit = false, AntiAFK = true, ControlWand = false, ESP = false,
     CustomSpeed = false, WalkSpeed = 100, CarSpeed = 100, FlySpeed = 100, CarFlySpeed = 100, 
-    CustomJump = false, JumpValue = 100, KillAura = false
+    CustomJump = false, JumpValue = 100
 }
 local CurrentSpeedState = "Walk"
 
@@ -567,7 +567,6 @@ BtnFlyNoclip.Visible = false
 local BtnESP = CreateButton("ESP: OFF", ScrollFrame)
 local BtnGod = CreateButton("God Mode (Anti-Tsunami): OFF", ScrollFrame)
 local BtnRevive = CreateButton("Force Revive (Keep Items)", ScrollFrame)
-local BtnKillAura, BoxAuraRadius = CreateInputRow("Kill Aura: OFF", 20, ScrollFrame)
 local BtnNoclip = CreateButton("Noclip: OFF", ScrollFrame)
 local BtnInstant = CreateButton("Instant Interact: OFF", ScrollFrame)
 local BtnSuperHit = CreateButton("Super Hero Hit : OFF", ScrollFrame)
@@ -947,101 +946,6 @@ BtnRevive.MouseButton1Click:Connect(function()
     end
 end)
 
-local AuraPart = nil
-local KillAuraLoop = nil
-local IsFlingAttacking = false
-
-BtnKillAura.MouseButton1Click:Connect(function()
-    Features.KillAura = not Features.KillAura
-    BtnKillAura.Text = string.split(BtnKillAura.Text, ":")[1] .. (Features.KillAura and ": ON" or ": OFF")
-    BtnKillAura.TextColor3 = Features.KillAura and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
-    
-    if Features.KillAura then
-        AuraPart = Instance.new("Part")
-        AuraPart.Shape = Enum.PartType.Ball
-        AuraPart.Material = Enum.Material.ForceField
-        AuraPart.Color = Color3.fromRGB(255, 0, 0)
-        AuraPart.Transparency = 0.5
-        AuraPart.CanCollide = false
-        AuraPart.Anchored = true
-        AuraPart.CastShadow = false
-        AuraPart.Parent = workspace.CurrentCamera 
-        
-        KillAuraLoop = RunService.Heartbeat:Connect(function()
-            local radius = tonumber(BoxAuraRadius.Text) or 20
-            if radius > 50 then radius = 50 end
-            
-            if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
-                local myHRP = Player.Character.HumanoidRootPart
-                AuraPart.Size = Vector3.new(radius * 2, radius * 2, radius * 2)
-                AuraPart.CFrame = myHRP.CFrame
-                
-                if IsFlingAttacking then return end
-                
-                local overlapParams = OverlapParams.new()
-                overlapParams.FilterType = Enum.RaycastFilterType.Exclude
-                overlapParams.FilterDescendantsInstances = {Player.Character, AuraPart}
-                
-                local hitParts = workspace:GetPartBoundsInRadius(myHRP.Position, radius, overlapParams)
-                local processedModels = {}
-                
-                for _, part in ipairs(hitParts) do
-                    local model = part:FindFirstAncestorOfClass("Model")
-                    if model and not processedModels[model] then
-                        processedModels[model] = true
-                        local hum = model:FindFirstChildOfClass("Humanoid")
-                        local targetHrp = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("Torso")
-                        
-                        if hum and targetHrp and hum.Health > 0 then
-                            
-                            -- نتحقق هل عندك سلاح عشان ندمجه صدق؟
-                            local tool = Player.Character:FindFirstChildOfClass("Tool")
-                            if tool and tool:FindFirstChild("Handle") and firetouchinterest then
-                                -- الطريقة الأولى: دمج حقيقي بالسلاح
-                                firetouchinterest(tool.Handle, targetHrp, 0)
-                                firetouchinterest(tool.Handle, targetHrp, 1)
-                            else
-                                -- الطريقة الثانية: الاصطدام المدمر (Fling) في حال ما معك سلاح
-                                task.spawn(function()
-                                    IsFlingAttacking = true
-                                    local oldPos = myHRP.CFrame
-                                    
-                                    local spin = Instance.new("BodyAngularVelocity", myHRP)
-                                    spin.AngularVelocity = Vector3.new(90000, 90000, 90000)
-                                    spin.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
-                                    
-                                    local endTime = tick() + 0.15
-                                    while tick() < endTime and targetHrp and targetHrp.Parent do
-                                        myHRP.CFrame = targetHrp.CFrame
-                                        myHRP.Velocity = Vector3.new(50000, 50000, 50000)
-                                        task.wait()
-                                    end
-                                    
-                                    spin:Destroy()
-                                    myHRP.Velocity = Vector3.new(0, 0, 0)
-                                    myHRP.RotVelocity = Vector3.new(0, 0, 0)
-                                    myHRP.CFrame = oldPos
-                                    task.wait(0.05)
-                                    IsFlingAttacking = false
-                                end)
-                            end
-                        end
-                    end
-                end
-            end
-        end)
-    else
-        if KillAuraLoop then KillAuraLoop:Disconnect() KillAuraLoop = nil end
-        if AuraPart then AuraPart:Destroy() AuraPart = nil end
-        IsFlingAttacking = false
-    end
-end)
-
-BoxAuraRadius.FocusLost:Connect(function()
-    local val = tonumber(BoxAuraRadius.Text) or 20
-    if val > 50 then BoxAuraRadius.Text = "50" end
-end)
-
 BtnSpeed.MouseButton1Click:Connect(function()
     Features.CustomSpeed = not Features.CustomSpeed
     UpdateSpeedDisplay()
@@ -1173,10 +1077,8 @@ RestartBtn.MouseButton1Click:Connect(function()
     if FlyLoop then FlyLoop:Disconnect() end
     if FlyNoclipLoop then FlyNoclipLoop:Disconnect() end
     if ESPLoop then ESPLoop:Disconnect() end
-    if KillAuraLoop then KillAuraLoop:Disconnect() end
     if bg then bg:Destroy() end
     if bv then bv:Destroy() end
-    if AuraPart then AuraPart:Destroy() end
     
     workspace.CurrentCamera.CameraSubject = Player.Character:WaitForChild("Humanoid")
     ScreenGui:Destroy()
