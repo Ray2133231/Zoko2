@@ -961,7 +961,7 @@ BtnGod.MouseButton1Click:Connect(function()
                         end
                     end
                 end
-                Notify("God Mode", "تم تفعيل وضع الشبح المنيع (ضد لمس الكوارث)!", Color3.fromRGB(0, 255, 127), "success")
+                Notify("God Mode", "تم تفعيل وضع المنيع!", Color3.fromRGB(0, 255, 127), "success")
             end
         end)
     end
