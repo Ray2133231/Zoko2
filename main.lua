@@ -91,8 +91,49 @@ ListLayout.Parent = ScrollFrame
 ListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 ListLayout.Padding = UDim.new(0, 8)
 
-local function Notify(titleText, descText, color)
+-- نظام الإشعارات والأصوات المطور
+local function Notify(titleText, descText, color, soundType)
     local useColor = color or Color3.fromRGB(0, 212, 255)
+    local sType = soundType or "info"
+    
+    -- تشغيل الصوت في Thread منفصل عشان ما يعلق الإشعار وقت التحميل
+    task.spawn(function()
+        pcall(function()
+            local sfx = Instance.new("Sound")
+            sfx.Volume = 2
+            
+            -- روابطك الخاصة
+            local customSounds = {
+                success = {url = "https://b.top4top.io/m_3289sqfch3.mp3", file = "zoko_success.mp3"},
+                error = {url = "https://a.top4top.io/m_3289fk8p52.mp3", file = "zoko_error.mp3"},
+                info = {url = "https://l.top4top.io/m_3289d3vkx1.mp3", file = "zoko_info.mp3"}
+            }
+            
+            -- أصوات بديلة في حال المحاكي ما يدعم الروابط الخارجية
+            local fallbackSounds = {
+                success = "rbxassetid://2865227271",
+                error = "rbxassetid://147758632",
+                info = "rbxassetid://2865228021"
+            }
+
+            -- التحقق من دعم المحاكي للـ Custom Assets
+            if writefile and getcustomasset and isfile and game.HttpGet then
+                local soundData = customSounds[sType]
+                -- تحميل الملف إذا مو موجود مسبقاً
+                if not isfile(soundData.file) then
+                    writefile(soundData.file, game:HttpGet(soundData.url))
+                end
+                sfx.SoundId = getcustomasset(soundData.file)
+            else
+                sfx.SoundId = fallbackSounds[sType]
+            end
+
+            sfx.Parent = workspace.CurrentCamera
+            sfx:Play()
+            game:GetService("Debris"):AddItem(sfx, 3)
+        end)
+    end)
+
     local NotifFrame = Instance.new("Frame")
     NotifFrame.Size = UDim2.new(0, 250, 0, 70)
     NotifFrame.Position = UDim2.new(1, 10, 0.8, 0)
@@ -254,7 +295,7 @@ local function AddTarget(plr)
     if SelectedTargets[plr.UserId] then RemoveTarget(plr) return end
     local count = 0
     for _ in pairs(SelectedTargets) do count = count + 1 end
-    if count >= 3 then Notify("تنبيه", "الحد 3 أشخاص!", Color3.fromRGB(255, 50, 50)) return end
+    if count >= 3 then Notify("تنبيه", "الحد 3 أشخاص!", Color3.fromRGB(255, 50, 50), "error") return end
 
     SelectedTargets[plr.UserId] = plr
     ControlFrame.Visible = true
@@ -362,7 +403,7 @@ BtnCmdTp.MouseButton1Click:Connect(function()
     local tPlayer = ActiveTarget
     if tPlayer and tPlayer.Character and tPlayer.Character:FindFirstChild("HumanoidRootPart") and Player.Character then
         Player.Character.HumanoidRootPart.CFrame = tPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, -3)
-        Notify("Teleport", "تم الانتقال إلى " .. tPlayer.DisplayName)
+        Notify("Teleport", "تم الانتقال إلى " .. tPlayer.DisplayName, nil, "success")
     end
 end)
 
@@ -373,7 +414,7 @@ BtnCmdBring.MouseButton1Click:Connect(function()
         local myHRP = Player.Character:FindFirstChild("HumanoidRootPart")
         if myHRP then
             local myPos = myHRP.CFrame
-            Notify("Bring", "سحب " .. tPlayer.DisplayName, Color3.fromRGB(255, 200, 80))
+            Notify("Bring", "سحب " .. tPlayer.DisplayName, Color3.fromRGB(255, 200, 80), "success")
             local spinLoop = RunService.Heartbeat:Connect(function()
                 myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, 1)
                 myHRP.Velocity = (myPos.Position - targetHRP.Position).Unit * 100
@@ -417,7 +458,7 @@ BtnCmdFling.MouseButton1Click:Connect(function()
     if isFlinging then
         BtnCmdFling.Text = string.split(BtnCmdFling.Text, ":")[1] .. ": ON"
         BtnCmdFling.TextColor3 = Color3.fromRGB(0, 255, 127)
-        Notify("Fling", "تم تشغيل وضع التطير!", Color3.fromRGB(0, 255, 127))
+        Notify("Fling", "تم تشغيل وضع التطير!", Color3.fromRGB(0, 255, 127), "success")
         
         if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
             local myHRP = Player.Character.HumanoidRootPart
@@ -436,7 +477,7 @@ BtnCmdFling.MouseButton1Click:Connect(function()
     else
         BtnCmdFling.Text = string.split(BtnCmdFling.Text, ":")[1] .. ": OFF"
         BtnCmdFling.TextColor3 = Color3.fromRGB(200, 200, 200)
-        Notify("Fling", "تم إيقاف التطيير.", Color3.fromRGB(200, 200, 200))
+        Notify("Fling", "تم إيقاف التطيير.", Color3.fromRGB(200, 200, 200), "info")
         
         if FlingLoop then FlingLoop:Disconnect() FlingLoop = nil end
         
@@ -453,7 +494,7 @@ BtnCmdScare.MouseButton1Click:Connect(function()
     if isScaring then
         BtnCmdScare.Text = string.split(BtnCmdScare.Text, ":")[1] .. ": ON"
         BtnCmdScare.TextColor3 = Color3.fromRGB(0, 255, 127)
-        Notify("Scare", "بدأ سيناريو التخويف!", Color3.fromRGB(0, 255, 127))
+        Notify("Scare", "بدأ سيناريو التخويف!", Color3.fromRGB(0, 255, 127), "success")
         
         task.spawn(function()
             while isScaring do
@@ -501,7 +542,7 @@ BtnCmdScare.MouseButton1Click:Connect(function()
     else
         BtnCmdScare.Text = string.split(BtnCmdScare.Text, ":")[1] .. ": OFF"
         BtnCmdScare.TextColor3 = Color3.fromRGB(200, 200, 200)
-        Notify("Scare", "تم إيقاف التخويف.", Color3.fromRGB(200, 200, 200))
+        Notify("Scare", "تم إيقاف التخويف.", Color3.fromRGB(200, 200, 200), "info")
     end
 end)
 
@@ -920,7 +961,7 @@ BtnGod.MouseButton1Click:Connect(function()
                         end
                     end
                 end
-                Notify("God Mode", "تم تفعيل وضع الشبح المنيع (ضد لمس الكوارث)!", Color3.fromRGB(0, 255, 127))
+                Notify("God Mode", "تم تفعيل وضع الشبح المنيع (ضد لمس الكوارث)!", Color3.fromRGB(0, 255, 127), "success")
             end
         end)
     end
@@ -941,7 +982,7 @@ BtnRevive.MouseButton1Click:Connect(function()
                     end
                 end
             end)
-            Notify("Force Revive", "تم الإنعاش مع الحفاظ على الانفنتوري!", Color3.fromRGB(0, 255, 127))
+            Notify("Force Revive", "تم الإنعاش مع الحفاظ على الانفنتوري!", Color3.fromRGB(0, 255, 127), "success")
         end
     end
 end)
@@ -1014,7 +1055,7 @@ Player.Idled:Connect(function()
         VirtualUser:ClickButton2(Vector2.new())
         if Player.Character and Player.Character:FindFirstChild("Humanoid") then
             Player.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-            Notify("Anti-AFK", "تم منع طردك من اللعبة وجعلك تقفز!", Color3.fromRGB(0, 255, 127))
+            Notify("Anti-AFK", "تم منع طردك من اللعبة وجعلك تقفز!", Color3.fromRGB(0, 255, 127), "info")
         end
     end
 end)
@@ -1047,8 +1088,8 @@ DevBtn.Parent = MainFrame
 DevBtn.MouseButton1Click:Connect(function()
     local site = "http://45.137.98.42:5000/"
     if setclipboard then
-        setclipboard(site) Notify("Zoko Link Copied!", "تم نسخ الرابط بنجاح!")
-    else Notify("Zoko Site", "الرابط: " .. site) end
+        setclipboard(site) Notify("Zoko Link Copied!", "تم نسخ الرابط بنجاح!", nil, "success")
+    else Notify("Zoko Site", "الرابط: " .. site, nil, "info") end
 end)
 
 local RestartBtn = Instance.new("TextButton")
