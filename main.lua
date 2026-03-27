@@ -45,7 +45,7 @@ Stroke.Thickness = 2
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.BackgroundTransparency = 1
-Title.Text = "Zoko Trainer V4"
+Title.Text = "Zoko Trainer V5"
 Title.TextColor3 = Color3.fromRGB(0, 212, 255)
 Title.Font = Enum.Font.GothamBlack
 Title.TextSize = 22
@@ -826,13 +826,11 @@ local RenderLoop = RunService.RenderStepped:Connect(function()
 
     if Features.GodMode then
         pcall(function()
-            -- رفع الدم لدرجة أسطورية
             hum.MaxHealth = math.huge
             hum.Health = math.huge
             hum.BreakJointsOnDeath = false 
             hum.RequiresNeck = false 
             
-            -- منع الرقدول والموت
             hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
             hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
             hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
@@ -843,12 +841,10 @@ local RenderLoop = RunService.RenderStepped:Connect(function()
                 hum:ChangeState(Enum.HumanoidStateType.GettingUp)
             end
             
-            -- التثقيل
             if hrp then 
                 hrp.CustomPhysicalProperties = PhysicalProperties.new(100000, 0.3, 0.5, 1, 1) 
             end
 
-            -- حماية المفاصل (يمنع تفكك الشخصية إذا التسونامي كسر المفصل)
             for _, v in pairs(char:GetDescendants()) do
                 if v:IsA("Motor6D") and not v.Enabled then
                     v.Enabled = true
@@ -916,7 +912,6 @@ BtnGod.MouseButton1Click:Connect(function()
             end)
         end
         
-        -- ميزة إلغاء اللمس: تخلي التسونامي أو اللافا يمر من خلالك بدون ما يدمجك! (يشتغل على أغلب الإكسبلويترز)
         pcall(function()
             if getconnections then
                 for _, v in pairs(Player.Character:GetDescendants()) do
@@ -954,6 +949,8 @@ end)
 
 local AuraPart = nil
 local KillAuraLoop = nil
+local IsFlingAttacking = false
+
 BtnKillAura.MouseButton1Click:Connect(function()
     Features.KillAura = not Features.KillAura
     BtnKillAura.Text = string.split(BtnKillAura.Text, ":")[1] .. (Features.KillAura and ": ON" or ": OFF")
@@ -979,7 +976,8 @@ BtnKillAura.MouseButton1Click:Connect(function()
                 AuraPart.Size = Vector3.new(radius * 2, radius * 2, radius * 2)
                 AuraPart.CFrame = myHRP.CFrame
                 
-                -- التحديث الجديد: استخدام GetPartBoundsInRadius للبحث الدقيق والسريع جداً
+                if IsFlingAttacking then return end
+                
                 local overlapParams = OverlapParams.new()
                 overlapParams.FilterType = Enum.RaycastFilterType.Exclude
                 overlapParams.FilterDescendantsInstances = {Player.Character, AuraPart}
@@ -989,21 +987,43 @@ BtnKillAura.MouseButton1Click:Connect(function()
                 
                 for _, part in ipairs(hitParts) do
                     local model = part:FindFirstAncestorOfClass("Model")
-                    -- نتأكد إنه مودل وفي داخله هيومانود
                     if model and not processedModels[model] then
                         processedModels[model] = true
                         local hum = model:FindFirstChildOfClass("Humanoid")
-                        local targetHrp = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("Torso") or model:FindFirstChild("UpperTorso")
+                        local targetHrp = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("Torso")
                         
                         if hum and targetHrp and hum.Health > 0 then
-                            -- فرم اللاعب أو الـ NPC
-                            hum.Health = 0
-                            pcall(function() hum:BreakJoints() end)
                             
-                            -- تطييره لآخر الماب كزيادة تأكيد
-                            if not targetHrp.Anchored then
-                                targetHrp.Velocity = (targetHrp.Position - myHRP.Position).Unit * 10000 + Vector3.new(0, 10000, 0)
-                                targetHrp.RotVelocity = Vector3.new(50000, 50000, 50000)
+                            -- نتحقق هل عندك سلاح عشان ندمجه صدق؟
+                            local tool = Player.Character:FindFirstChildOfClass("Tool")
+                            if tool and tool:FindFirstChild("Handle") and firetouchinterest then
+                                -- الطريقة الأولى: دمج حقيقي بالسلاح
+                                firetouchinterest(tool.Handle, targetHrp, 0)
+                                firetouchinterest(tool.Handle, targetHrp, 1)
+                            else
+                                -- الطريقة الثانية: الاصطدام المدمر (Fling) في حال ما معك سلاح
+                                task.spawn(function()
+                                    IsFlingAttacking = true
+                                    local oldPos = myHRP.CFrame
+                                    
+                                    local spin = Instance.new("BodyAngularVelocity", myHRP)
+                                    spin.AngularVelocity = Vector3.new(90000, 90000, 90000)
+                                    spin.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+                                    
+                                    local endTime = tick() + 0.15
+                                    while tick() < endTime and targetHrp and targetHrp.Parent do
+                                        myHRP.CFrame = targetHrp.CFrame
+                                        myHRP.Velocity = Vector3.new(50000, 50000, 50000)
+                                        task.wait()
+                                    end
+                                    
+                                    spin:Destroy()
+                                    myHRP.Velocity = Vector3.new(0, 0, 0)
+                                    myHRP.RotVelocity = Vector3.new(0, 0, 0)
+                                    myHRP.CFrame = oldPos
+                                    task.wait(0.05)
+                                    IsFlingAttacking = false
+                                end)
                             end
                         end
                     end
@@ -1013,6 +1033,7 @@ BtnKillAura.MouseButton1Click:Connect(function()
     else
         if KillAuraLoop then KillAuraLoop:Disconnect() KillAuraLoop = nil end
         if AuraPart then AuraPart:Destroy() AuraPart = nil end
+        IsFlingAttacking = false
     end
 end)
 
