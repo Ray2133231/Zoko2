@@ -824,8 +824,8 @@ local function CreateInputRow(text, defaultValue, parent)
 end
 
 -- إضافة زر نظام الانتقالات في القائمة الرئيسية
-local BtnOpenTeleports = CreateButton("Teleports / Checkpoints", ScrollFrame)
-BtnOpenTeleports.TextColor3 = Color3.fromRGB(0, 255, 127)
+local BtnOpenTeleports = CreateButton("Checkpoints", ScrollFrame)
+
 BtnOpenTeleports.MouseButton1Click:Connect(function()
     TpFrame.Visible = not TpFrame.Visible
     if TpFrame.Visible then RefreshTpList() end
