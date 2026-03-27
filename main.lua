@@ -45,7 +45,7 @@ Stroke.Thickness = 2
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.BackgroundTransparency = 1
-Title.Text = "Zoko Trainer V3"
+Title.Text = "Zoko Trainer V4"
 Title.TextColor3 = Color3.fromRGB(0, 212, 255)
 Title.Font = Enum.Font.GothamBlack
 Title.TextSize = 22
@@ -565,7 +565,7 @@ local BtnFly = CreateButton("Fly : OFF", ScrollFrame)
 local BtnFlyNoclip = CreateButton("Fly Noclip : OFF", ScrollFrame)
 BtnFlyNoclip.Visible = false
 local BtnESP = CreateButton("ESP: OFF", ScrollFrame)
-local BtnGod = CreateButton("God Mode & Anti-Ragdoll: OFF", ScrollFrame)
+local BtnGod = CreateButton("God Mode (Anti-Tsunami): OFF", ScrollFrame)
 local BtnRevive = CreateButton("Force Revive (Keep Items)", ScrollFrame)
 local BtnKillAura, BoxAuraRadius = CreateInputRow("Kill Aura: OFF", 20, ScrollFrame)
 local BtnNoclip = CreateButton("Noclip: OFF", ScrollFrame)
@@ -826,11 +826,13 @@ local RenderLoop = RunService.RenderStepped:Connect(function()
 
     if Features.GodMode then
         pcall(function()
-            hum.Health = hum.MaxHealth
+            -- رفع الدم لدرجة أسطورية
+            hum.MaxHealth = math.huge
+            hum.Health = math.huge
             hum.BreakJointsOnDeath = false 
-            hum.RequiresNeck = false -- هذا الكود السحري يمنع موتك حتى لو التسونامي فصل راسك عن جسمك!
+            hum.RequiresNeck = false 
             
-            -- منع التسونامي من تفعيل الرقدول أو تغيير فيزياء شخصيتك
+            -- منع الرقدول والموت
             hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
             hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
             hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
@@ -841,20 +843,21 @@ local RenderLoop = RunService.RenderStepped:Connect(function()
                 hum:ChangeState(Enum.HumanoidStateType.GettingUp)
             end
             
+            -- التثقيل
             if hrp then 
                 hrp.CustomPhysicalProperties = PhysicalProperties.new(100000, 0.3, 0.5, 1, 1) 
             end
-            
-            -- درع خفي لصد دمج البيئة والتسونامي
-            if not char:FindFirstChildOfClass("ForceField") then
-                local ff = Instance.new("ForceField", char)
-                ff.Visible = false
+
+            -- حماية المفاصل (يمنع تفكك الشخصية إذا التسونامي كسر المفصل)
+            for _, v in pairs(char:GetDescendants()) do
+                if v:IsA("Motor6D") and not v.Enabled then
+                    v.Enabled = true
+                end
             end
         end)
     else 
         pcall(function() 
             if hrp then hrp.CustomPhysicalProperties = PhysicalProperties.new(0.7, 0.3, 0.5, 1, 1) end 
-            if char:FindFirstChildOfClass("ForceField") then char:FindFirstChildOfClass("ForceField"):Destroy() end
             hum.RequiresNeck = true
         end) 
     end
@@ -903,11 +906,27 @@ BtnGod.MouseButton1Click:Connect(function()
     BtnGod.Text = string.split(BtnGod.Text, ":")[1] .. (Features.GodMode and ": ON" or ": OFF")
     BtnGod.TextColor3 = Features.GodMode and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
     
-    if Features.GodMode and Player.Character and Player.Character:FindFirstChildOfClass("Humanoid") then
+    if Features.GodMode and Player.Character then
         local hum = Player.Character:FindFirstChildOfClass("Humanoid")
-        hum.HealthChanged:Connect(function(newHealth)
-            if Features.GodMode and newHealth < hum.MaxHealth then
-                hum.Health = hum.MaxHealth
+        if hum then
+            hum.HealthChanged:Connect(function(newHealth)
+                if Features.GodMode and newHealth < hum.MaxHealth then
+                    hum.Health = hum.MaxHealth
+                end
+            end)
+        end
+        
+        -- ميزة إلغاء اللمس: تخلي التسونامي أو اللافا يمر من خلالك بدون ما يدمجك! (يشتغل على أغلب الإكسبلويترز)
+        pcall(function()
+            if getconnections then
+                for _, v in pairs(Player.Character:GetDescendants()) do
+                    if v:IsA("BasePart") then
+                        for _, conn in pairs(getconnections(v.Touched)) do
+                            conn:Disable()
+                        end
+                    end
+                end
+                Notify("God Mode", "تم تفعيل وضع الشبح المنيع (ضد لمس الكوارث)!", Color3.fromRGB(0, 255, 127))
             end
         end)
     end
@@ -960,29 +979,31 @@ BtnKillAura.MouseButton1Click:Connect(function()
                 AuraPart.Size = Vector3.new(radius * 2, radius * 2, radius * 2)
                 AuraPart.CFrame = myHRP.CFrame
                 
-                -- حل مشكلة اللاق: بدل ما نبحث في كل قطعة في الماب، صرنا نبحث فقط عن اللاعبين والشخصيات (Models)
-                local targets = {}
-                for _, p in ipairs(game.Players:GetPlayers()) do
-                    if p ~= Player and p.Character then table.insert(targets, p.Character) end
-                end
-                for _, obj in ipairs(workspace:GetChildren()) do
-                    if obj:IsA("Model") and obj ~= Player.Character and not game.Players:GetPlayerFromCharacter(obj) then
-                        table.insert(targets, obj)
-                    end
-                end
-
-                for _, obj in ipairs(targets) do
-                    local hum = obj:FindFirstChildOfClass("Humanoid")
-                    local hrp = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Torso") or obj:FindFirstChild("UpperTorso")
-                    
-                    if hum and hrp and hum.Health > 0 then
-                        local dist = (myHRP.Position - hrp.Position).Magnitude
-                        if dist <= radius then
+                -- التحديث الجديد: استخدام GetPartBoundsInRadius للبحث الدقيق والسريع جداً
+                local overlapParams = OverlapParams.new()
+                overlapParams.FilterType = Enum.RaycastFilterType.Exclude
+                overlapParams.FilterDescendantsInstances = {Player.Character, AuraPart}
+                
+                local hitParts = workspace:GetPartBoundsInRadius(myHRP.Position, radius, overlapParams)
+                local processedModels = {}
+                
+                for _, part in ipairs(hitParts) do
+                    local model = part:FindFirstAncestorOfClass("Model")
+                    -- نتأكد إنه مودل وفي داخله هيومانود
+                    if model and not processedModels[model] then
+                        processedModels[model] = true
+                        local hum = model:FindFirstChildOfClass("Humanoid")
+                        local targetHrp = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("Torso") or model:FindFirstChild("UpperTorso")
+                        
+                        if hum and targetHrp and hum.Health > 0 then
+                            -- فرم اللاعب أو الـ NPC
                             hum.Health = 0
                             pcall(function() hum:BreakJoints() end)
                             
-                            if hrp and not hrp.Anchored then
-                                hrp.Velocity = (hrp.Position - myHRP.Position).Unit * 5000 + Vector3.new(0, 5000, 0)
+                            -- تطييره لآخر الماب كزيادة تأكيد
+                            if not targetHrp.Anchored then
+                                targetHrp.Velocity = (targetHrp.Position - myHRP.Position).Unit * 10000 + Vector3.new(0, 10000, 0)
+                                targetHrp.RotVelocity = Vector3.new(50000, 50000, 50000)
                             end
                         end
                     end
@@ -1030,7 +1051,6 @@ BtnInstant.MouseButton1Click:Connect(function()
         end)
     else if InstantInteractLoop then InstantInteractLoop:Disconnect() InstantInteractLoop = nil end end
 end)
-
 
 BtnNoclip.MouseButton1Click:Connect(function()
     Features.Noclip = not Features.Noclip
