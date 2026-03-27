@@ -46,7 +46,7 @@ Stroke.Thickness = 2
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.BackgroundTransparency = 1
-    Title.Text = "Zoko Trainer V1"
+Title.Text = "Zoko Trainer V2"
 Title.TextColor3 = Color3.fromRGB(0, 212, 255)
 Title.Font = Enum.Font.GothamBlack
 Title.TextSize = 22
@@ -84,7 +84,7 @@ ScrollFrame.Position = UDim2.new(0, 0, 0, 45)
 ScrollFrame.BackgroundTransparency = 1
 ScrollFrame.ScrollBarThickness = 4
 ScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(0, 212, 255)
-ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 700)
+ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 950)
 ScrollFrame.Parent = MainFrame
 
 local ListLayout = Instance.new("UIListLayout")
@@ -419,7 +419,7 @@ end)
 BtnCmdFling.MouseButton1Click:Connect(function()
     isFlinging = not isFlinging
     if isFlinging then
-        BtnCmdFling.Text = "Fling: ON"
+        BtnCmdFling.Text = string.split(BtnCmdFling.Text, ":")[1] .. ": ON"
         BtnCmdFling.TextColor3 = Color3.fromRGB(0, 255, 127)
         Notify("Fling", "تم تشغيل وضع التطير!", Color3.fromRGB(0, 255, 127))
         
@@ -438,7 +438,7 @@ BtnCmdFling.MouseButton1Click:Connect(function()
             end)
         end
     else
-        BtnCmdFling.Text = "Fling : OFF"
+        BtnCmdFling.Text = string.split(BtnCmdFling.Text, ":")[1] .. ": OFF"
         BtnCmdFling.TextColor3 = Color3.fromRGB(200, 200, 200)
         Notify("Fling", "تم إيقاف التطيير.", Color3.fromRGB(200, 200, 200))
         
@@ -455,7 +455,7 @@ end)
 BtnCmdScare.MouseButton1Click:Connect(function()
     isScaring = not isScaring
     if isScaring then
-        BtnCmdScare.Text = "Scare: ON"
+        BtnCmdScare.Text = string.split(BtnCmdScare.Text, ":")[1] .. ": ON"
         BtnCmdScare.TextColor3 = Color3.fromRGB(0, 255, 127)
         Notify("Scare", "بدأ سيناريو التخويف!", Color3.fromRGB(0, 255, 127))
         
@@ -503,7 +503,7 @@ BtnCmdScare.MouseButton1Click:Connect(function()
             end
         end)
     else
-        BtnCmdScare.Text = "Scare: OFF"
+        BtnCmdScare.Text = string.split(BtnCmdScare.Text, ":")[1] .. ": OFF"
         BtnCmdScare.TextColor3 = Color3.fromRGB(200, 200, 200)
         Notify("Scare", "تم إيقاف التخويف.", Color3.fromRGB(200, 200, 200))
     end
@@ -514,7 +514,7 @@ local Features = {
     Fly = false, FlyNoclip = false, GodMode = false, InfJump = false, Noclip = false, 
     InstantPrompt = false, SuperHit = false, AntiAFK = true, ControlWand = false, ESP = false,
     CustomSpeed = false, WalkSpeed = 100, CarSpeed = 100, FlySpeed = 100, CarFlySpeed = 100, 
-    CustomJump = false, JumpValue = 100
+    CustomJump = false, JumpValue = 100, KillAura = false
 }
 local CurrentSpeedState = "Walk"
 
@@ -569,7 +569,9 @@ local BtnFly = CreateButton("Fly : OFF", ScrollFrame)
 local BtnFlyNoclip = CreateButton("Fly Noclip : OFF", ScrollFrame)
 BtnFlyNoclip.Visible = false
 local BtnESP = CreateButton("ESP: OFF", ScrollFrame)
-local BtnGod = CreateButton("God Mode & No Ragdoll: OFF", ScrollFrame)
+local BtnGod = CreateButton("God Mode & Anti-Ragdoll: OFF", ScrollFrame)
+local BtnRevive = CreateButton("Force Revive (Keep Items)", ScrollFrame)
+local BtnKillAura, BoxAuraRadius = CreateInputRow("Kill Aura: OFF", 20, ScrollFrame)
 local BtnNoclip = CreateButton("Noclip: OFF", ScrollFrame)
 local BtnInstant = CreateButton("Instant Interact: OFF", ScrollFrame)
 local BtnSuperHit = CreateButton("Super Hero Hit : OFF", ScrollFrame)
@@ -606,7 +608,7 @@ end
 local ESPLoop = nil
 BtnESP.MouseButton1Click:Connect(function()
     Features.ESP = not Features.ESP
-    BtnESP.Text = Features.ESP and "ESP : ON" or "ESP : OFF"
+    BtnESP.Text = string.split(BtnESP.Text, ":")[1] .. (Features.ESP and ": ON" or ": OFF")
     BtnESP.TextColor3 = Features.ESP and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
     
     if Features.ESP then
@@ -667,7 +669,7 @@ end
 
 BtnWand.MouseButton1Click:Connect(function()
     Features.ControlWand = not Features.ControlWand
-    BtnWand.Text = Features.ControlWand and "Control Wand : ON" or "Control Wand : OFF"
+    BtnWand.Text = string.split(BtnWand.Text, ":")[1] .. (Features.ControlWand and ": ON" or ": OFF")
     BtnWand.TextColor3 = Features.ControlWand and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
     
     CleanupWands() 
@@ -702,7 +704,7 @@ end)
 local FlyLoop, bg, bv, FlyNoclipLoop
 BtnFly.MouseButton1Click:Connect(function()
     Features.Fly = not Features.Fly
-    BtnFly.Text = Features.Fly and "Fly (Shift/Q/Z): ON" or "Fly (Shift/Q/Z): OFF"
+    BtnFly.Text = string.split(BtnFly.Text, ":")[1] .. (Features.Fly and ": ON" or ": OFF")
     BtnFly.TextColor3 = Features.Fly and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
     local char = Player.Character
     if not char then return end
@@ -754,7 +756,7 @@ BtnFly.MouseButton1Click:Connect(function()
         
         if Features.FlyNoclip then
             Features.FlyNoclip = false
-            BtnFlyNoclip.Text = "Fly Noclip: OFF"
+            BtnFlyNoclip.Text = string.split(BtnFlyNoclip.Text, ":")[1] .. ": OFF"
             BtnFlyNoclip.TextColor3 = Color3.fromRGB(200, 200, 200)
             if FlyNoclipLoop then FlyNoclipLoop:Disconnect() end
             
@@ -773,7 +775,7 @@ end)
 BtnFlyNoclip.MouseButton1Click:Connect(function()
     if not Features.Fly then return end
     Features.FlyNoclip = not Features.FlyNoclip
-    BtnFlyNoclip.Text = Features.FlyNoclip and "Fly Noclip: ON" or "Fly Noclip: OFF"
+    BtnFlyNoclip.Text = string.split(BtnFlyNoclip.Text, ":")[1] .. (Features.FlyNoclip and ": ON" or ": OFF")
     BtnFlyNoclip.TextColor3 = Features.FlyNoclip and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
     
     if Features.FlyNoclip then
@@ -829,14 +831,18 @@ local RenderLoop = RunService.RenderStepped:Connect(function()
     if Features.GodMode then
         pcall(function()
             hum.Health = hum.MaxHealth
+            hum.BreakJointsOnDeath = false -- يمنع تكسر العظام تماماً
             hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
             hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
             hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
             local currentState = hum:GetState()
-            if currentState == Enum.HumanoidStateType.Ragdoll or currentState == Enum.HumanoidStateType.FallingDown then
+            if currentState == Enum.HumanoidStateType.Ragdoll or currentState == Enum.HumanoidStateType.FallingDown or currentState == Enum.HumanoidStateType.Dead then
                 hum:ChangeState(Enum.HumanoidStateType.GettingUp)
             end
-            if hrp then hrp.CustomPhysicalProperties = PhysicalProperties.new(100, 0.3, 0.5, 1, 1) end
+            if hrp then 
+                -- جعل اللاعب كتلته أثقل من الجبل لمنع دفه أو تطييحه (Anti-Push/Knockback)
+                hrp.CustomPhysicalProperties = PhysicalProperties.new(100000, 0.3, 0.5, 1, 1) 
+            end
         end)
     else pcall(function() if hrp then hrp.CustomPhysicalProperties = PhysicalProperties.new(0.7, 0.3, 0.5, 1, 1) end end) end
 
@@ -879,6 +885,101 @@ local RenderLoop = RunService.RenderStepped:Connect(function()
     if Features.CustomJump then hum.UseJumpPower = true hum.JumpPower = Features.JumpValue end
 end)
 
+BtnGod.MouseButton1Click:Connect(function()
+    Features.GodMode = not Features.GodMode
+    BtnGod.Text = string.split(BtnGod.Text, ":")[1] .. (Features.GodMode and ": ON" or ": OFF")
+    BtnGod.TextColor3 = Features.GodMode and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
+    
+    if Features.GodMode and Player.Character and Player.Character:FindFirstChildOfClass("Humanoid") then
+        local hum = Player.Character:FindFirstChildOfClass("Humanoid")
+        hum.HealthChanged:Connect(function(newHealth)
+            if Features.GodMode and newHealth < hum.MaxHealth then
+                hum.Health = hum.MaxHealth
+            end
+        end)
+    end
+end)
+
+BtnRevive.MouseButton1Click:Connect(function()
+    local char = Player.Character
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            pcall(function()
+                hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+                hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+                hum.Health = hum.MaxHealth
+                for _, v in pairs(char:GetDescendants()) do
+                    if v:IsA("Motor6D") then
+                        v.Enabled = true -- إرجاع المفاصل إذا تكسرت
+                    end
+                end
+            end)
+            Notify("Force Revive", "تم الإنعاش مع الحفاظ على الانفنتوري!", Color3.fromRGB(0, 255, 127))
+        end
+    end
+end)
+
+local AuraPart = nil
+local KillAuraLoop = nil
+BtnKillAura.MouseButton1Click:Connect(function()
+    Features.KillAura = not Features.KillAura
+    BtnKillAura.Text = string.split(BtnKillAura.Text, ":")[1] .. (Features.KillAura and ": ON" or ": OFF")
+    BtnKillAura.TextColor3 = Features.KillAura and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
+    
+    if Features.KillAura then
+        AuraPart = Instance.new("Part")
+        AuraPart.Shape = Enum.PartType.Ball
+        AuraPart.Material = Enum.Material.ForceField
+        AuraPart.Color = Color3.fromRGB(255, 0, 0)
+        AuraPart.Transparency = 0.5
+        AuraPart.CanCollide = false
+        AuraPart.Anchored = true
+        AuraPart.CastShadow = false
+        AuraPart.Parent = workspace.CurrentCamera -- تظهر عندك بس
+        
+        KillAuraLoop = RunService.Heartbeat:Connect(function()
+            local radius = tonumber(BoxAuraRadius.Text) or 20
+            if radius > 50 then radius = 50 end -- حطيت لمت 50 عشان ما يسبب لاق للماب
+            
+            if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+                local myHRP = Player.Character.HumanoidRootPart
+                AuraPart.Size = Vector3.new(radius * 2, radius * 2, radius * 2)
+                AuraPart.CFrame = myHRP.CFrame
+                
+                for _, obj in pairs(workspace:GetDescendants()) do
+                    if obj:IsA("Model") and obj ~= Player.Character then
+                        local hum = obj:FindFirstChildOfClass("Humanoid")
+                        local hrp = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Torso")
+                        if hum and hrp and hum.Health > 0 then
+                            local dist = (myHRP.Position - hrp.Position).Magnitude
+                            if dist <= radius then
+                                -- تصفير الدم
+                                hum.Health = 0
+                                hum:BreakJoints()
+                                
+                                -- لو محمي وما مات، طيره لآخر الماب
+                                if hrp and not hrp.Anchored then
+                                    hrp.Velocity = (hrp.Position - myHRP.Position).Unit * 50000 + Vector3.new(0, 50000, 0)
+                                    hrp.RotVelocity = Vector3.new(50000, 50000, 50000)
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end)
+    else
+        if KillAuraLoop then KillAuraLoop:Disconnect() KillAuraLoop = nil end
+        if AuraPart then AuraPart:Destroy() AuraPart = nil end
+    end
+end)
+BoxAuraRadius.FocusLost:Connect(function()
+    local val = tonumber(BoxAuraRadius.Text) or 20
+    if val > 50 then BoxAuraRadius.Text = "50" end
+end)
+
+
 BtnSpeed.MouseButton1Click:Connect(function()
     Features.CustomSpeed = not Features.CustomSpeed
     UpdateSpeedDisplay()
@@ -901,7 +1002,7 @@ end)
 local InstantInteractLoop
 BtnInstant.MouseButton1Click:Connect(function()
     Features.InstantInteract = not Features.InstantInteract
-    BtnInstant.Text = Features.InstantInteract and "Instant Interact: ON" or "Instant Interact: OFF"
+    BtnInstant.Text = string.split(BtnInstant.Text, ":")[1] .. (Features.InstantInteract and ": ON" or ": OFF")
     BtnInstant.TextColor3 = Features.InstantInteract and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
     if Features.InstantInteract then
         InstantInteractLoop = RunService.Heartbeat:Connect(function()
@@ -910,15 +1011,10 @@ BtnInstant.MouseButton1Click:Connect(function()
     else if InstantInteractLoop then InstantInteractLoop:Disconnect() InstantInteractLoop = nil end end
 end)
 
-BtnGod.MouseButton1Click:Connect(function()
-    Features.GodMode = not Features.GodMode
-    BtnGod.Text = Features.GodMode and "God Mode & No Ragdoll: ON" or "God Mode & No Ragdoll: OFF"
-    BtnGod.TextColor3 = Features.GodMode and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
-end)
 
 BtnNoclip.MouseButton1Click:Connect(function()
     Features.Noclip = not Features.Noclip
-    BtnNoclip.Text = Features.Noclip and "Noclip: ON" or "Noclip: OFF"
+    BtnNoclip.Text = string.split(BtnNoclip.Text, ":")[1] .. (Features.Noclip and ": ON" or ": OFF")
     BtnNoclip.TextColor3 = Features.Noclip and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
     
     if not Features.Noclip and Player.Character then
@@ -928,13 +1024,13 @@ end)
 
 BtnSuperHit.MouseButton1Click:Connect(function()
     Features.SuperHit = not Features.SuperHit
-    BtnSuperHit.Text = Features.SuperHit and "Super Hero Hit: ON" or "Super Hero Hit: OFF"
+    BtnSuperHit.Text = string.split(BtnSuperHit.Text, ":")[1] .. (Features.SuperHit and ": ON" or ": OFF")
     BtnSuperHit.TextColor3 = Features.SuperHit and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
 end)
 
 BtnInfJump.MouseButton1Click:Connect(function()
     Features.InfJump = not Features.InfJump
-    BtnInfJump.Text = Features.InfJump and "Infinite Jump: ON" or "Infinite Jump: OFF"
+    BtnInfJump.Text = string.split(BtnInfJump.Text, ":")[1] .. (Features.InfJump and ": ON" or ": OFF")
     BtnInfJump.TextColor3 = Features.InfJump and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
 end)
 
@@ -960,13 +1056,13 @@ end)
 
 BtnAntiAFK.MouseButton1Click:Connect(function()
     Features.AntiAFK = not Features.AntiAFK
-    BtnAntiAFK.Text = Features.AntiAFK and "Anti-AFK: ON" or "Anti-AFK: OFF"
+    BtnAntiAFK.Text = string.split(BtnAntiAFK.Text, ":")[1] .. (Features.AntiAFK and ": ON" or ": OFF")
     BtnAntiAFK.TextColor3 = Features.AntiAFK and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
 end)
 
 BtnJump.MouseButton1Click:Connect(function()
     Features.CustomJump = not Features.CustomJump
-    BtnJump.Text = Features.CustomJump and "Jump Power: ON" or "Jump Power: OFF"
+    BtnJump.Text = string.split(BtnJump.Text, ":")[1] .. (Features.CustomJump and ": ON" or ": OFF")
     BtnJump.TextColor3 = Features.CustomJump and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
     if not Features.CustomJump and Player.Character then Player.Character.Humanoid.UseJumpPower = false end
 end)
@@ -1016,8 +1112,10 @@ RestartBtn.MouseButton1Click:Connect(function()
     if FlyLoop then FlyLoop:Disconnect() end
     if FlyNoclipLoop then FlyNoclipLoop:Disconnect() end
     if ESPLoop then ESPLoop:Disconnect() end
+    if KillAuraLoop then KillAuraLoop:Disconnect() end
     if bg then bg:Destroy() end
     if bv then bv:Destroy() end
+    if AuraPart then AuraPart:Destroy() end
     
     workspace.CurrentCamera.CameraSubject = Player.Character:WaitForChild("Humanoid")
     ScreenGui:Destroy()
