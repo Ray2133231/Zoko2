@@ -28,7 +28,6 @@ local function CleanupWands()
 end
 CleanupWands()
 
-
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 0, 0, 0)
 MainFrame.Position = UDim2.new(0.5, -135, 0.5, -200)
@@ -46,7 +45,7 @@ Stroke.Thickness = 2
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.BackgroundTransparency = 1
-Title.Text = "Zoko Trainer V2"
+Title.Text = "Zoko Trainer V3"
 Title.TextColor3 = Color3.fromRGB(0, 212, 255)
 Title.Font = Enum.Font.GothamBlack
 Title.TextSize = 22
@@ -132,7 +131,6 @@ local function Notify(titleText, descText, color)
     task.wait(0.5)
     NotifFrame:Destroy()
 end
-
 
 local SelectedTargets = {} 
 local TargetCards = {}     
@@ -326,7 +324,6 @@ BtnCloseControl.MouseButton1Click:Connect(function()
     ControlFrame.Visible = false 
 end)
 
-
 SpecFrame.Size = UDim2.new(0, 200, 0, 70)
 SpecFrame.Position = UDim2.new(0.5, -100, 0.9, -80)
 SpecFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
@@ -360,7 +357,6 @@ SpecClose.Font = Enum.Font.GothamBold
 SpecClose.TextSize = 16
 Instance.new("UICorner", SpecClose).CornerRadius = UDim.new(0, 6)
 SpecClose.MouseButton1Click:Connect(StopSpectating)
-
 
 BtnCmdTp.MouseButton1Click:Connect(function()
     local tPlayer = ActiveTarget
@@ -831,20 +827,37 @@ local RenderLoop = RunService.RenderStepped:Connect(function()
     if Features.GodMode then
         pcall(function()
             hum.Health = hum.MaxHealth
-            hum.BreakJointsOnDeath = false -- يمنع تكسر العظام تماماً
+            hum.BreakJointsOnDeath = false 
+            hum.RequiresNeck = false -- هذا الكود السحري يمنع موتك حتى لو التسونامي فصل راسك عن جسمك!
+            
+            -- منع التسونامي من تفعيل الرقدول أو تغيير فيزياء شخصيتك
             hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
             hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
             hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+            hum:SetStateEnabled(Enum.HumanoidStateType.Physics, false) 
+            
             local currentState = hum:GetState()
-            if currentState == Enum.HumanoidStateType.Ragdoll or currentState == Enum.HumanoidStateType.FallingDown or currentState == Enum.HumanoidStateType.Dead then
+            if currentState == Enum.HumanoidStateType.Ragdoll or currentState == Enum.HumanoidStateType.FallingDown or currentState == Enum.HumanoidStateType.Dead or currentState == Enum.HumanoidStateType.Physics then
                 hum:ChangeState(Enum.HumanoidStateType.GettingUp)
             end
+            
             if hrp then 
-                -- جعل اللاعب كتلته أثقل من الجبل لمنع دفه أو تطييحه (Anti-Push/Knockback)
                 hrp.CustomPhysicalProperties = PhysicalProperties.new(100000, 0.3, 0.5, 1, 1) 
             end
+            
+            -- درع خفي لصد دمج البيئة والتسونامي
+            if not char:FindFirstChildOfClass("ForceField") then
+                local ff = Instance.new("ForceField", char)
+                ff.Visible = false
+            end
         end)
-    else pcall(function() if hrp then hrp.CustomPhysicalProperties = PhysicalProperties.new(0.7, 0.3, 0.5, 1, 1) end end) end
+    else 
+        pcall(function() 
+            if hrp then hrp.CustomPhysicalProperties = PhysicalProperties.new(0.7, 0.3, 0.5, 1, 1) end 
+            if char:FindFirstChildOfClass("ForceField") then char:FindFirstChildOfClass("ForceField"):Destroy() end
+            hum.RequiresNeck = true
+        end) 
+    end
 
     local isVehicle = hum.SeatPart ~= nil
     
@@ -911,7 +924,7 @@ BtnRevive.MouseButton1Click:Connect(function()
                 hum.Health = hum.MaxHealth
                 for _, v in pairs(char:GetDescendants()) do
                     if v:IsA("Motor6D") then
-                        v.Enabled = true -- إرجاع المفاصل إذا تكسرت
+                        v.Enabled = true 
                     end
                 end
             end)
@@ -936,33 +949,40 @@ BtnKillAura.MouseButton1Click:Connect(function()
         AuraPart.CanCollide = false
         AuraPart.Anchored = true
         AuraPart.CastShadow = false
-        AuraPart.Parent = workspace.CurrentCamera -- تظهر عندك بس
+        AuraPart.Parent = workspace.CurrentCamera 
         
         KillAuraLoop = RunService.Heartbeat:Connect(function()
             local radius = tonumber(BoxAuraRadius.Text) or 20
-            if radius > 50 then radius = 50 end -- حطيت لمت 50 عشان ما يسبب لاق للماب
+            if radius > 50 then radius = 50 end
             
             if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
                 local myHRP = Player.Character.HumanoidRootPart
                 AuraPart.Size = Vector3.new(radius * 2, radius * 2, radius * 2)
                 AuraPart.CFrame = myHRP.CFrame
                 
-                for _, obj in pairs(workspace:GetDescendants()) do
-                    if obj:IsA("Model") and obj ~= Player.Character then
-                        local hum = obj:FindFirstChildOfClass("Humanoid")
-                        local hrp = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Torso")
-                        if hum and hrp and hum.Health > 0 then
-                            local dist = (myHRP.Position - hrp.Position).Magnitude
-                            if dist <= radius then
-                                -- تصفير الدم
-                                hum.Health = 0
-                                hum:BreakJoints()
-                                
-                                -- لو محمي وما مات، طيره لآخر الماب
-                                if hrp and not hrp.Anchored then
-                                    hrp.Velocity = (hrp.Position - myHRP.Position).Unit * 50000 + Vector3.new(0, 50000, 0)
-                                    hrp.RotVelocity = Vector3.new(50000, 50000, 50000)
-                                end
+                -- حل مشكلة اللاق: بدل ما نبحث في كل قطعة في الماب، صرنا نبحث فقط عن اللاعبين والشخصيات (Models)
+                local targets = {}
+                for _, p in ipairs(game.Players:GetPlayers()) do
+                    if p ~= Player and p.Character then table.insert(targets, p.Character) end
+                end
+                for _, obj in ipairs(workspace:GetChildren()) do
+                    if obj:IsA("Model") and obj ~= Player.Character and not game.Players:GetPlayerFromCharacter(obj) then
+                        table.insert(targets, obj)
+                    end
+                end
+
+                for _, obj in ipairs(targets) do
+                    local hum = obj:FindFirstChildOfClass("Humanoid")
+                    local hrp = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Torso") or obj:FindFirstChild("UpperTorso")
+                    
+                    if hum and hrp and hum.Health > 0 then
+                        local dist = (myHRP.Position - hrp.Position).Magnitude
+                        if dist <= radius then
+                            hum.Health = 0
+                            pcall(function() hum:BreakJoints() end)
+                            
+                            if hrp and not hrp.Anchored then
+                                hrp.Velocity = (hrp.Position - myHRP.Position).Unit * 5000 + Vector3.new(0, 5000, 0)
                             end
                         end
                     end
@@ -974,11 +994,11 @@ BtnKillAura.MouseButton1Click:Connect(function()
         if AuraPart then AuraPart:Destroy() AuraPart = nil end
     end
 end)
+
 BoxAuraRadius.FocusLost:Connect(function()
     local val = tonumber(BoxAuraRadius.Text) or 20
     if val > 50 then BoxAuraRadius.Text = "50" end
 end)
-
 
 BtnSpeed.MouseButton1Click:Connect(function()
     Features.CustomSpeed = not Features.CustomSpeed
