@@ -187,6 +187,7 @@ ConfirmText.TextColor3 = Color3.fromRGB(255, 255, 255)
 ConfirmText.Font = Enum.Font.GothamBold
 ConfirmText.TextSize = 14
 ConfirmText.TextWrapped = true
+ConfirmText.TextScaled = true
 
 local BtnYes = Instance.new("TextButton", ConfirmFrame)
 BtnYes.Size = UDim2.new(0.4, 0, 0, 35)
@@ -195,6 +196,8 @@ BtnYes.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
 BtnYes.Text = "نعم (Yes)"
 BtnYes.TextColor3 = Color3.fromRGB(255, 255, 255)
 BtnYes.Font = Enum.Font.GothamBold
+BtnYes.TextSize = 14
+BtnYes.TextScaled = true
 Instance.new("UICorner", BtnYes).CornerRadius = UDim.new(0, 6)
 
 local BtnNo = Instance.new("TextButton", ConfirmFrame)
@@ -204,6 +207,8 @@ BtnNo.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
 BtnNo.Text = "إلغاء (No)"
 BtnNo.TextColor3 = Color3.fromRGB(255, 255, 255)
 BtnNo.Font = Enum.Font.GothamBold
+BtnNo.TextSize = 14
+BtnNo.TextScaled = true
 Instance.new("UICorner", BtnNo).CornerRadius = UDim.new(0, 6)
 
 local ConfirmAction = nil
@@ -272,7 +277,7 @@ TpScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 local TpLayout = Instance.new("UIListLayout", TpScroll)
 TpLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 TpLayout.Padding = UDim.new(0, 5)
-TpLayout.SortOrder = Enum.SortOrder.LayoutOrder -- مهم جداً للترتيب
+TpLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
 local BtnAddNewTp = Instance.new("TextButton", TpFrame)
 BtnAddNewTp.Size = UDim2.new(0.9, 0, 0, 30)
@@ -325,7 +330,7 @@ ModalInput.Size = UDim2.new(0.9, 0, 0, 35)
 ModalInput.Position = UDim2.new(0.05, 0, 0, 20)
 ModalInput.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 ModalInput.Text = ""
-ModalInput.ClearTextOnFocus = false -- هذي تحل مشكلة اختفاء النص
+ModalInput.ClearTextOnFocus = false
 ModalInput.PlaceholderText = "Enter Checkpoint Name..."
 ModalInput.TextColor3 = Color3.fromRGB(255, 255, 255)
 ModalInput.Font = Enum.Font.GothamMedium
@@ -339,6 +344,8 @@ BtnSaveModal.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
 BtnSaveModal.Text = "Save"
 BtnSaveModal.TextColor3 = Color3.fromRGB(255, 255, 255)
 BtnSaveModal.Font = Enum.Font.GothamBold
+BtnSaveModal.TextSize = 14
+BtnSaveModal.TextScaled = true
 Instance.new("UICorner", BtnSaveModal).CornerRadius = UDim.new(0, 6)
 
 local BtnCancelModal = Instance.new("TextButton", ModalFrame)
@@ -348,6 +355,8 @@ BtnCancelModal.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
 BtnCancelModal.Text = "Cancel"
 BtnCancelModal.TextColor3 = Color3.fromRGB(255, 255, 255)
 BtnCancelModal.Font = Enum.Font.GothamBold
+BtnCancelModal.TextSize = 14
+BtnCancelModal.TextScaled = true
 Instance.new("UICorner", BtnCancelModal).CornerRadius = UDim.new(0, 6)
 
 local ContextMenu = Instance.new("Frame", ScreenGui)
