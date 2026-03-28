@@ -28,6 +28,18 @@ local function LoadCheckpoints()
         if s and type(r) == "table" then SavedCheckpoints = r end
     end
     if not SavedCheckpoints[CurrentPlaceId] then SavedCheckpoints[CurrentPlaceId] = {} end
+    
+    -- تحديث النقاط القديمة عشان تدعم نظام الترتيب (Order)
+    local maxOrder = 0
+    for n, d in pairs(SavedCheckpoints[CurrentPlaceId]) do
+        if d.Order and d.Order > maxOrder then maxOrder = d.Order end
+    end
+    for n, d in pairs(SavedCheckpoints[CurrentPlaceId]) do
+        if not d.Order then
+            maxOrder = maxOrder + 1
+            d.Order = maxOrder
+        end
+    end
 end
 
 local function SaveCheckpoints()
@@ -156,6 +168,62 @@ local function Notify(titleText, descText, color)
 end
 
 -----------------------------------
+-- مودل تأكيد الرسائل (Confirm) ---
+-----------------------------------
+local ConfirmFrame = Instance.new("Frame", ScreenGui)
+ConfirmFrame.Size = UDim2.new(0, 240, 0, 130)
+ConfirmFrame.Position = UDim2.new(0.5, -120, 0.5, -65)
+ConfirmFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+ConfirmFrame.Visible = false
+ConfirmFrame.ZIndex = 50
+Instance.new("UICorner", ConfirmFrame).CornerRadius = UDim.new(0, 10)
+Instance.new("UIStroke", ConfirmFrame).Color = Color3.fromRGB(255, 150, 0)
+
+local ConfirmText = Instance.new("TextLabel", ConfirmFrame)
+ConfirmText.Size = UDim2.new(1, -20, 0, 60)
+ConfirmText.Position = UDim2.new(0, 10, 0, 10)
+ConfirmText.BackgroundTransparency = 1
+ConfirmText.Text = "هل أنت متأكد؟"
+ConfirmText.TextColor3 = Color3.fromRGB(255, 255, 255)
+ConfirmText.Font = Enum.Font.GothamBold
+ConfirmText.TextSize = 14
+ConfirmText.TextWrapped = true
+
+local BtnYes = Instance.new("TextButton", ConfirmFrame)
+BtnYes.Size = UDim2.new(0.4, 0, 0, 35)
+BtnYes.Position = UDim2.new(0.05, 0, 1, -45)
+BtnYes.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+BtnYes.Text = "نعم (Yes)"
+BtnYes.TextColor3 = Color3.fromRGB(255, 255, 255)
+BtnYes.Font = Enum.Font.GothamBold
+Instance.new("UICorner", BtnYes).CornerRadius = UDim.new(0, 6)
+
+local BtnNo = Instance.new("TextButton", ConfirmFrame)
+BtnNo.Size = UDim2.new(0.4, 0, 0, 35)
+BtnNo.Position = UDim2.new(0.55, 0, 1, -45)
+BtnNo.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+BtnNo.Text = "إلغاء (No)"
+BtnNo.TextColor3 = Color3.fromRGB(255, 255, 255)
+BtnNo.Font = Enum.Font.GothamBold
+Instance.new("UICorner", BtnNo).CornerRadius = UDim.new(0, 6)
+
+local ConfirmAction = nil
+BtnYes.MouseButton1Click:Connect(function()
+    ConfirmFrame.Visible = false
+    if ConfirmAction then ConfirmAction(true) end
+end)
+BtnNo.MouseButton1Click:Connect(function()
+    ConfirmFrame.Visible = false
+    if ConfirmAction then ConfirmAction(false) end
+end)
+
+local function ShowConfirm(text, callback)
+    ConfirmText.Text = text
+    ConfirmAction = callback
+    ConfirmFrame.Visible = true
+end
+
+-----------------------------------
 -- واجهة الانتقالات (Teleports) ---
 -----------------------------------
 local TpFrame = Instance.new("Frame")
@@ -188,6 +256,13 @@ BtnCloseTp.Font = Enum.Font.GothamBold
 BtnCloseTp.TextSize = 18
 BtnCloseTp.MouseButton1Click:Connect(function() TpFrame.Visible = false end)
 
+local BtnToggleReorder = Instance.new("ImageButton", TpFrame)
+BtnToggleReorder.Size = UDim2.new(0, 20, 0, 20)
+BtnToggleReorder.Position = UDim2.new(1, -60, 0, 7)
+BtnToggleReorder.BackgroundTransparency = 1
+BtnToggleReorder.Image = "rbxassetid://6031280882" -- أيقونة ترتيب
+BtnToggleReorder.ImageColor3 = Color3.fromRGB(200, 200, 200)
+
 local TpScroll = Instance.new("ScrollingFrame", TpFrame)
 TpScroll.Size = UDim2.new(1, -10, 1, -80)
 TpScroll.Position = UDim2.new(0, 5, 0, 35)
@@ -209,12 +284,39 @@ BtnAddNewTp.Font = Enum.Font.GothamBold
 BtnAddNewTp.TextSize = 14
 Instance.new("UICorner", BtnAddNewTp).CornerRadius = UDim.new(0, 6)
 
--- مودل كتابة اسم النقطة
+-- أزرار حفظ وإلغاء وضع الترتيب
+local BtnSaveOrder = Instance.new("ImageButton", TpFrame)
+BtnSaveOrder.Size = UDim2.new(0, 30, 0, 30)
+BtnSaveOrder.Position = UDim2.new(0.05, 0, 1, -40)
+BtnSaveOrder.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+BtnSaveOrder.Image = "rbxassetid://6031280882" -- أيقونة حفظ
+BtnSaveOrder.Visible = false
+Instance.new("UICorner", BtnSaveOrder).CornerRadius = UDim.new(0, 6)
+
+local BtnCancelOrder = Instance.new("ImageButton", TpFrame)
+BtnCancelOrder.Size = UDim2.new(0, 30, 0, 30)
+BtnCancelOrder.Position = UDim2.new(0.95, -30, 1, -40)
+BtnCancelOrder.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+BtnCancelOrder.Image = "rbxassetid://6031094678" -- أيقونة X
+BtnCancelOrder.Visible = false
+Instance.new("UICorner", BtnCancelOrder).CornerRadius = UDim.new(0, 6)
+
+local TxtOrderMode = Instance.new("TextLabel", TpFrame)
+TxtOrderMode.Size = UDim2.new(0.6, 0, 0, 30)
+TxtOrderMode.Position = UDim2.new(0.2, 0, 1, -40)
+TxtOrderMode.BackgroundTransparency = 1
+TxtOrderMode.Text = "وضع الترتيب (Edit Mode)"
+TxtOrderMode.TextColor3 = Color3.fromRGB(255, 150, 0)
+TxtOrderMode.Font = Enum.Font.GothamBold
+TxtOrderMode.Visible = false
+
+-- مودل كتابة/تعديل اسم النقطة
 local ModalFrame = Instance.new("Frame", ScreenGui)
 ModalFrame.Size = UDim2.new(0, 220, 0, 120)
 ModalFrame.Position = UDim2.new(0.5, -110, 0.5, -60)
 ModalFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 ModalFrame.Visible = false
+ModalFrame.ZIndex = 20
 Instance.new("UICorner", ModalFrame).CornerRadius = UDim.new(0, 10)
 Instance.new("UIStroke", ModalFrame).Color = Color3.fromRGB(0, 212, 255)
 
@@ -249,7 +351,7 @@ Instance.new("UICorner", BtnCancelModal).CornerRadius = UDim.new(0, 6)
 
 -- قائمة الرايت كليك
 local ContextMenu = Instance.new("Frame", ScreenGui)
-ContextMenu.Size = UDim2.new(0, 150, 0, 70)
+ContextMenu.Size = UDim2.new(0, 150, 0, 105)
 ContextMenu.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 ContextMenu.Visible = false
 ContextMenu.ZIndex = 10
@@ -267,8 +369,16 @@ BtnCtxAutoJoin.Text = "Auto Join: OFF"
 BtnCtxAutoJoin.TextColor3 = Color3.fromRGB(200, 200, 200)
 BtnCtxAutoJoin.Font = Enum.Font.GothamMedium
 BtnCtxAutoJoin.TextSize = 12
-BtnCtxAutoJoin.ZIndex = 11
 Instance.new("UICorner", BtnCtxAutoJoin).CornerRadius = UDim.new(0, 4)
+
+local BtnCtxRename = Instance.new("TextButton", ContextMenu)
+BtnCtxRename.Size = UDim2.new(0.9, 0, 0, 30)
+BtnCtxRename.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+BtnCtxRename.Text = "Rename"
+BtnCtxRename.TextColor3 = Color3.fromRGB(255, 200, 0)
+BtnCtxRename.Font = Enum.Font.GothamBold
+BtnCtxRename.TextSize = 12
+Instance.new("UICorner", BtnCtxRename).CornerRadius = UDim.new(0, 4)
 
 local BtnCtxDelete = Instance.new("TextButton", ContextMenu)
 BtnCtxDelete.Size = UDim2.new(0.9, 0, 0, 30)
@@ -277,26 +387,34 @@ BtnCtxDelete.Text = "Delete"
 BtnCtxDelete.TextColor3 = Color3.fromRGB(255, 50, 50)
 BtnCtxDelete.Font = Enum.Font.GothamBold
 BtnCtxDelete.TextSize = 12
-BtnCtxDelete.ZIndex = 11
 Instance.new("UICorner", BtnCtxDelete).CornerRadius = UDim.new(0, 4)
 
 local SelectedCpName = ""
+local RenameMode = false
+local IsReorderMode = false
+local TempCheckpoints = {}
 
--- تحديث قائمة النقاط
 local function RefreshTpList()
     for _, v in pairs(TpScroll:GetChildren()) do
-        if v:IsA("TextButton") then v:Destroy() end
+        if v:IsA("Frame") or v:IsA("TextButton") then v:Destroy() end
     end
     
+    local sortedList = {}
+    local dataSrc = IsReorderMode and TempCheckpoints or SavedCheckpoints[CurrentPlaceId]
+    for name, data in pairs(dataSrc) do
+        table.insert(sortedList, {Name = name, Data = data})
+    end
+    table.sort(sortedList, function(a, b) return a.Data.Order < b.Data.Order end)
+    
     local ySize = 0
-    for name, data in pairs(SavedCheckpoints[CurrentPlaceId]) do
+    for i, item in ipairs(sortedList) do
         local btn = Instance.new("TextButton", TpScroll)
         btn.Size = UDim2.new(0.95, 0, 0, 30)
         btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
         
-        local displayTxt = name
-        if data.AutoJoin then
-            displayTxt = "[★] " .. name
+        local displayTxt = item.Name
+        if item.Data.AutoJoin then
+            displayTxt = "[★] " .. item.Name
             btn.TextColor3 = Color3.fromRGB(0, 255, 127)
         else
             btn.TextColor3 = Color3.fromRGB(200, 200, 200)
@@ -305,28 +423,119 @@ local function RefreshTpList()
         btn.Text = displayTxt
         btn.Font = Enum.Font.GothamMedium
         btn.TextSize = 13
+        btn.TextXAlignment = Enum.TextXAlignment.Left
+        local pad = Instance.new("UIPadding", btn) pad.PaddingLeft = UDim.new(0, 10)
         Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
         
-        -- ليفت كليك (انتقال) و رايت كليك (قائمة الخيارات)
-        btn.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
-                    Player.Character.HumanoidRootPart.CFrame = CFrame.new(data.X, data.Y, data.Z)
-                    Notify("Teleport", "تم الانتقال إلى: " .. name, Color3.fromRGB(0, 255, 127))
+        if IsReorderMode then
+            local BtnUp = Instance.new("TextButton", btn)
+            BtnUp.Size = UDim2.new(0, 25, 0, 25)
+            BtnUp.Position = UDim2.new(1, -55, 0, 2)
+            BtnUp.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+            BtnUp.Text = "▲"
+            BtnUp.TextColor3 = Color3.fromRGB(255, 255, 255)
+            Instance.new("UICorner", BtnUp).CornerRadius = UDim.new(0, 4)
+            BtnUp.MouseButton1Click:Connect(function()
+                if i > 1 then
+                    local tempOrder = sortedList[i].Data.Order
+                    sortedList[i].Data.Order = sortedList[i-1].Data.Order
+                    sortedList[i-1].Data.Order = tempOrder
+                    RefreshTpList()
                 end
-                ContextMenu.Visible = false
-            elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
-                SelectedCpName = name
-                BtnCtxAutoJoin.Text = data.AutoJoin and "Auto Join: ON" or "Auto Join: OFF"
-                BtnCtxAutoJoin.TextColor3 = data.AutoJoin and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
-                ContextMenu.Position = UDim2.new(0, Mouse.X, 0, Mouse.Y)
-                ContextMenu.Visible = true
-            end
-        end)
+            end)
+            
+            local BtnDown = Instance.new("TextButton", btn)
+            BtnDown.Size = UDim2.new(0, 25, 0, 25)
+            BtnDown.Position = UDim2.new(1, -28, 0, 2)
+            BtnDown.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+            BtnDown.Text = "▼"
+            BtnDown.TextColor3 = Color3.fromRGB(255, 255, 255)
+            Instance.new("UICorner", BtnDown).CornerRadius = UDim.new(0, 4)
+            BtnDown.MouseButton1Click:Connect(function()
+                if i < #sortedList then
+                    local tempOrder = sortedList[i].Data.Order
+                    sortedList[i].Data.Order = sortedList[i+1].Data.Order
+                    sortedList[i+1].Data.Order = tempOrder
+                    RefreshTpList()
+                end
+            end)
+        else
+            btn.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+                        Player.Character.HumanoidRootPart.CFrame = CFrame.new(item.Data.X, item.Data.Y, item.Data.Z)
+                        Notify("Teleport", "تم الانتقال إلى: " .. item.Name, Color3.fromRGB(0, 255, 127))
+                    end
+                    ContextMenu.Visible = false
+                elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+                    SelectedCpName = item.Name
+                    BtnCtxAutoJoin.Text = item.Data.AutoJoin and "Auto Join: ON" or "Auto Join: OFF"
+                    BtnCtxAutoJoin.TextColor3 = item.Data.AutoJoin and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
+                    ContextMenu.Position = UDim2.new(0, Mouse.X, 0, Mouse.Y)
+                    ContextMenu.Visible = true
+                end
+            end)
+        end
         ySize = ySize + 35
     end
     TpScroll.CanvasSize = UDim2.new(0, 0, 0, ySize)
 end
+
+BtnToggleReorder.MouseButton1Click:Connect(function()
+    IsReorderMode = not IsReorderMode
+    if IsReorderMode then
+        TempCheckpoints = HttpService:JSONDecode(HttpService:JSONEncode(SavedCheckpoints[CurrentPlaceId]))
+        BtnToggleReorder.ImageColor3 = Color3.fromRGB(255, 150, 0)
+        BtnAddNewTp.Visible = false
+        BtnSaveOrder.Visible = true
+        BtnCancelOrder.Visible = true
+        TxtOrderMode.Visible = true
+    else
+        BtnToggleReorder.ImageColor3 = Color3.fromRGB(200, 200, 200)
+        BtnAddNewTp.Visible = true
+        BtnSaveOrder.Visible = false
+        BtnCancelOrder.Visible = false
+        TxtOrderMode.Visible = false
+    end
+    RefreshTpList()
+end)
+
+BtnSaveOrder.MouseButton1Click:Connect(function()
+    ShowConfirm("هل متأكد أنك تريد تبديل الترتيب وحفظه؟", function(yes)
+        if yes then
+            SavedCheckpoints[CurrentPlaceId] = TempCheckpoints
+            SaveCheckpoints()
+            Notify("Saved", "تم حفظ الترتيب الجديد بنجاح!", Color3.fromRGB(0, 255, 127))
+            
+            -- أنيميشن سريع للتبديل
+            TpScroll.Position = UDim2.new(0, -20, 0, 35)
+            TpScroll:TweenPosition(UDim2.new(0, 5, 0, 35), "Out", "Back", 0.3, true)
+            
+            BtnToggleReorder.ImageColor3 = Color3.fromRGB(200, 200, 200)
+            IsReorderMode = false
+            BtnAddNewTp.Visible = true
+            BtnSaveOrder.Visible = false
+            BtnCancelOrder.Visible = false
+            TxtOrderMode.Visible = false
+            RefreshTpList()
+        end
+    end)
+end)
+
+BtnCancelOrder.MouseButton1Click:Connect(function()
+    ShowConfirm("هل متأكد أنك تريد إلغاء الترتيب؟", function(yes)
+        if yes then
+            Notify("Cancelled", "تم إلغاء التبديلات ورجوع الترتيب القديم.", Color3.fromRGB(255, 50, 50))
+            BtnToggleReorder.ImageColor3 = Color3.fromRGB(200, 200, 200)
+            IsReorderMode = false
+            BtnAddNewTp.Visible = true
+            BtnSaveOrder.Visible = false
+            BtnCancelOrder.Visible = false
+            TxtOrderMode.Visible = false
+            RefreshTpList()
+        end
+    end)
+end)
 
 -- إخفاء المنيو لو ضغطت برا
 UIS.InputBegan:Connect(function(input)
@@ -341,8 +550,8 @@ UIS.InputBegan:Connect(function(input)
     end
 end)
 
--- أزرار مودل الإضافة
 BtnAddNewTp.MouseButton1Click:Connect(function()
+    RenameMode = false
     ModalInput.Text = ""
     ModalFrame.Visible = true
 end)
@@ -353,19 +562,40 @@ end)
 
 BtnSaveModal.MouseButton1Click:Connect(function()
     local name = ModalInput.Text
-    if name ~= "" and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
-        local pos = Player.Character.HumanoidRootPart.Position
-        SavedCheckpoints[CurrentPlaceId][name] = {
-            X = pos.X, Y = pos.Y, Z = pos.Z, AutoJoin = false
-        }
+    if name ~= "" then
+        if RenameMode and SelectedCpName ~= "" then
+            local data = SavedCheckpoints[CurrentPlaceId][SelectedCpName]
+            SavedCheckpoints[CurrentPlaceId][name] = data
+            if name ~= SelectedCpName then
+                SavedCheckpoints[CurrentPlaceId][SelectedCpName] = nil
+            end
+            Notify("Rename", "تم تغيير الاسم إلى: " .. name, Color3.fromRGB(0, 255, 127))
+        elseif Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+            local pos = Player.Character.HumanoidRootPart.Position
+            local maxOrder = 0
+            for _, d in pairs(SavedCheckpoints[CurrentPlaceId]) do
+                if d.Order and d.Order > maxOrder then maxOrder = d.Order end
+            end
+            SavedCheckpoints[CurrentPlaceId][name] = {
+                X = pos.X, Y = pos.Y, Z = pos.Z, AutoJoin = false, Order = maxOrder + 1
+            }
+            Notify("Checkpoint", "تم حفظ النقطة بنجاح!", Color3.fromRGB(0, 255, 127))
+        end
         SaveCheckpoints()
         RefreshTpList()
         ModalFrame.Visible = false
-        Notify("Checkpoint", "تم حفظ النقطة بنجاح!", Color3.fromRGB(0, 255, 127))
     end
 end)
 
--- أزرار قائمة الرايت كليك
+BtnCtxRename.MouseButton1Click:Connect(function()
+    if SelectedCpName ~= "" then
+        RenameMode = true
+        ModalInput.Text = SelectedCpName
+        ModalFrame.Visible = true
+        ContextMenu.Visible = false
+    end
+end)
+
 BtnCtxDelete.MouseButton1Click:Connect(function()
     if SelectedCpName ~= "" then
         SavedCheckpoints[CurrentPlaceId][SelectedCpName] = nil
@@ -379,9 +609,7 @@ end)
 BtnCtxAutoJoin.MouseButton1Click:Connect(function()
     if SelectedCpName ~= "" then
         local currentState = SavedCheckpoints[CurrentPlaceId][SelectedCpName].AutoJoin
-        -- نطفي الباقي عشان ما يصير تعارض
         for n, d in pairs(SavedCheckpoints[CurrentPlaceId]) do d.AutoJoin = false end
-        -- نعكس حالة الحالي
         SavedCheckpoints[CurrentPlaceId][SelectedCpName].AutoJoin = not currentState
         SaveCheckpoints()
         RefreshTpList()
@@ -394,7 +622,9 @@ BtnCtxAutoJoin.MouseButton1Click:Connect(function()
     end
 end)
 
-
+-----------------------------------
+-- باقي الأكواد والميزات (Aimbot, Fly, ESP...) --
+-----------------------------------
 local SelectedTargets = {} 
 local TargetCards = {}     
 local ActiveTarget = nil   
@@ -426,9 +656,7 @@ local TargetsContainer = Instance.new("Frame", ControlFrame)
 TargetsContainer.Size = UDim2.new(1, 0, 0, 100)
 TargetsContainer.Position = UDim2.new(0, 0, 0, 30)
 TargetsContainer.BackgroundTransparency = 1
-
-local TPadding = Instance.new("UIPadding", TargetsContainer)
-TPadding.PaddingLeft = UDim.new(0, 8)
+local TPadding = Instance.new("UIPadding", TargetsContainer) TPadding.PaddingLeft = UDim.new(0, 8)
 local TListLayout = Instance.new("UIListLayout", TargetsContainer)
 TListLayout.FillDirection = Enum.FillDirection.Horizontal
 TListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
@@ -438,7 +666,6 @@ local ControlButtonsFrame = Instance.new("Frame", ControlFrame)
 ControlButtonsFrame.Size = UDim2.new(1, 0, 0, 180)
 ControlButtonsFrame.Position = UDim2.new(0, 0, 0, 150)
 ControlButtonsFrame.BackgroundTransparency = 1
-
 local ControlListLayout = Instance.new("UIListLayout", ControlButtonsFrame)
 ControlListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 ControlListLayout.Padding = UDim.new(0, 6)
@@ -528,7 +755,6 @@ local function AddTarget(plr)
     Card.Text = "" 
     Card.AutoButtonColor = false
     Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 8)
-    
     local CStroke = Instance.new("UIStroke", Card)
     CStroke.Name = "CardStroke"
     CStroke.Color = Color3.fromRGB(100, 100, 100)
@@ -543,7 +769,6 @@ local function AddTarget(plr)
     Img.BackgroundTransparency = 1
     Img.Active = false
     Instance.new("UICorner", Img).CornerRadius = UDim.new(1, 0)
-    
     pcall(function() 
         local imgContent, isReady = game.Players:GetUserThumbnailAsync(plr.UserId, Enum.ThumbnailType.AvatarBust, Enum.ThumbnailSize.Size150x150)
         Img.Image = imgContent 
@@ -558,7 +783,6 @@ local function AddTarget(plr)
     NameLbl.Font = Enum.Font.GothamMedium
     NameLbl.TextSize = 10
     NameLbl.TextScaled = true
-    NameLbl.Active = false
 
     local XBtn = Instance.new("TextButton", Card)
     XBtn.Size = UDim2.new(0, 20, 0, 20)
@@ -600,7 +824,6 @@ SpecImage.Size = UDim2.new(0, 50, 0, 50)
 SpecImage.Position = UDim2.new(0, 10, 0.5, -25)
 SpecImage.BackgroundTransparency = 1
 Instance.new("UICorner", SpecImage).CornerRadius = UDim.new(1, 0)
-
 local SpecName = Instance.new("TextLabel", SpecFrame)
 SpecName.Size = UDim2.new(0, 100, 1, 0)
 SpecName.Position = UDim2.new(0, 70, 0, 0)
@@ -658,19 +881,15 @@ BtnCmdSpec.MouseButton1Click:Connect(function()
         ControlFrame.Visible = false
         SpecFrame.Visible = true
         SpecName.Text = tPlayer.DisplayName
-
         pcall(function() 
             local imgContent, isReady = game.Players:GetUserThumbnailAsync(tPlayer.UserId, Enum.ThumbnailType.AvatarBust, Enum.ThumbnailSize.Size150x150)
             SpecImage.Image = imgContent
         end)
-        
         if SpectateLoop then SpectateLoop:Disconnect() end
         SpectateLoop = RunService.RenderStepped:Connect(function()
             if tPlayer and tPlayer.Character and tPlayer.Character:FindFirstChild("Humanoid") then
                 workspace.CurrentCamera.CameraSubject = tPlayer.Character.Humanoid
-            else
-                StopSpectating()
-            end
+            else StopSpectating() end
         end)
     end
 end)
@@ -681,7 +900,6 @@ BtnCmdFling.MouseButton1Click:Connect(function()
         BtnCmdFling.Text = string.split(BtnCmdFling.Text, ":")[1] .. ": ON"
         BtnCmdFling.TextColor3 = Color3.fromRGB(0, 255, 127)
         Notify("Fling", "تم تشغيل وضع التطير!", Color3.fromRGB(0, 255, 127))
-        
         if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
             local myHRP = Player.Character.HumanoidRootPart
             FlingLoop = RunService.Heartbeat:Connect(function()
@@ -700,9 +918,7 @@ BtnCmdFling.MouseButton1Click:Connect(function()
         BtnCmdFling.Text = string.split(BtnCmdFling.Text, ":")[1] .. ": OFF"
         BtnCmdFling.TextColor3 = Color3.fromRGB(200, 200, 200)
         Notify("Fling", "تم إيقاف التطيير.", Color3.fromRGB(200, 200, 200))
-        
         if FlingLoop then FlingLoop:Disconnect() FlingLoop = nil end
-        
         if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
             local myHRP = Player.Character.HumanoidRootPart
             myHRP.Velocity = Vector3.new(0,0,0)
@@ -717,28 +933,22 @@ BtnCmdScare.MouseButton1Click:Connect(function()
         BtnCmdScare.Text = string.split(BtnCmdScare.Text, ":")[1] .. ": ON"
         BtnCmdScare.TextColor3 = Color3.fromRGB(0, 255, 127)
         Notify("Scare", "بدأ سيناريو التخويف!", Color3.fromRGB(0, 255, 127))
-        
         task.spawn(function()
             while isScaring do
                 local tPlayer = ActiveTarget
                 if tPlayer and tPlayer.Character and tPlayer.Character:FindFirstChild("HumanoidRootPart") and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
                     local myHRP = Player.Character.HumanoidRootPart
                     local targetHRP = tPlayer.Character.HumanoidRootPart
-                    
                     myHRP.Anchored = true 
-                    
                     if not isScaring then break end
                     myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, -2.5) * CFrame.Angles(0, math.pi, 0)
                     task.wait(2)
-                    
                     if not isScaring then break end
                     myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 200, 0)
                     task.wait(0.5)
-                    
                     if not isScaring then break end
                     myHRP.CFrame = targetHRP.CFrame * CFrame.new(1.5, 0.5, 2) * CFrame.Angles(0, 0, 0)
                     task.wait(1.5)
-                    
                     local randomDuration = math.random(6, 8)
                     local endTime = tick() + randomDuration
                     while tick() < endTime and isScaring do
@@ -748,15 +958,11 @@ BtnCmdScare.MouseButton1Click:Connect(function()
                         myHRP.CFrame = targetHRP.CFrame * CFrame.new(rx, 0, rz)
                         task.wait(0.4)
                     end
-                    
                     if not isScaring then break end
                     myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, -2) * CFrame.Angles(0, math.pi, 0)
                     task.wait(1.5)
-                else
-                    task.wait(0.1)
-                end
+                else task.wait(0.1) end
             end
-            
             if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
                 Player.Character.HumanoidRootPart.Anchored = false
             end
@@ -819,7 +1025,6 @@ local function CreateInputRow(text, defaultValue, parent)
     InputBox.TextSize = 14
     InputBox.Parent = Row
     Instance.new("UICorner", InputBox).CornerRadius = UDim.new(0, 8)
-
     return ToggleBtn, InputBox
 end
 
@@ -829,7 +1034,7 @@ BtnOpenTeleports.MouseButton1Click:Connect(function()
     if TpFrame.Visible then RefreshTpList() end
 end)
 
-local BtnAimbot = CreateButton("Aimbot: OFF", ScrollFrame)
+local BtnAimbot = CreateButton("Aimbot A: OFF", ScrollFrame)
 local BtnWand = CreateButton("Control Wand : OFF", ScrollFrame)
 local BtnFly = CreateButton("Fly : OFF", ScrollFrame)
 local BtnFlyNoclip = CreateButton("Fly Noclip : OFF", ScrollFrame)
@@ -863,13 +1068,12 @@ local function UpdateSpeedDisplay()
         prefix = "Car Fly Speed"
         val = Features.CarFlySpeed
     end
-    
     BtnSpeed.Text = prefix .. (Features.CustomSpeed and ": ON" or ": OFF")
     BoxSpeed.Text = tostring(val)
 end
 
 -----------------------------------
--- Aimbot System
+-- Aimbot A System (Smooth + TriggerBot)
 -----------------------------------
 local FOVGui = Instance.new("ScreenGui")
 FOVGui.Name = "Zoko_AimbotFOV"
@@ -907,17 +1111,43 @@ end
 
 BtnAimbot.MouseButton1Click:Connect(function()
     Features.Aimbot = not Features.Aimbot
-    BtnAimbot.Text = "Aimbot: " .. (Features.Aimbot and "ON" or "OFF")
+    BtnAimbot.Text = "Aimbot A: " .. (Features.Aimbot and "ON" or "OFF")
     BtnAimbot.TextColor3 = Features.Aimbot and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
     FOVFrame.Visible = Features.Aimbot
 end)
 
+local clicking = false
 local AimbotLoop = RunService.RenderStepped:Connect(function()
     if Features.Aimbot then
-        if UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) or UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
-            local targetHead = GetClosestToCenter()
-            if targetHead then
-                workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, targetHead.Position)
+        local targetHead = GetClosestToCenter()
+        if targetHead then
+            -- توجيه سلس (Smooth) يسمح بفك الإيم لو حركت الماوس بقوة
+            local camCFrame = workspace.CurrentCamera.CFrame
+            local newCFrame = CFrame.new(camCFrame.Position, targetHead.Position)
+            workspace.CurrentCamera.CFrame = camCFrame:Lerp(newCFrame, 0.25)
+            
+            -- TriggerBot (إطلاق تلقائي)
+            if not clicking then
+                clicking = true
+                pcall(function()
+                    if mouse1press then mouse1press() task.wait(0.05) mouse1release()
+                    else VirtualUser:ClickButton1(Vector2.new()) end
+                end)
+                task.wait(0.1)
+                clicking = false
+            end
+        end
+        
+        -- ميزة No Reload (بدون تعشيق لبعض الألعاب)
+        local tool = Player.Character and Player.Character:FindFirstChildOfClass("Tool")
+        if tool then
+            for _, v in pairs(tool:GetDescendants()) do
+                if v:IsA("ValueBase") and type(v.Value) == "number" then
+                    local nameLow = string.lower(v.Name)
+                    if string.find(nameLow, "ammo") or string.find(nameLow, "clip") or string.find(nameLow, "mag") then
+                        v.Value = 999
+                    end
+                end
             end
         end
     end
@@ -992,7 +1222,6 @@ BtnWand.MouseButton1Click:Connect(function()
     BtnWand.TextColor3 = Features.ControlWand and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
     
     CleanupWands() 
-    
     if Features.ControlWand then
         local currentWand = Instance.new("Tool")
         currentWand.RequiresHandle = false
@@ -1050,7 +1279,6 @@ BtnFly.MouseButton1Click:Connect(function()
         FlyLoop = RunService.RenderStepped:Connect(function()
             local cam = workspace.CurrentCamera
             local move = Vector3.new(0,0,0)
-            
             local speed = isVehicle and Features.CarFlySpeed or Features.FlySpeed
             
             if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then speed = speed * 3 end 
@@ -1078,7 +1306,6 @@ BtnFly.MouseButton1Click:Connect(function()
             BtnFlyNoclip.Text = string.split(BtnFlyNoclip.Text, ":")[1] .. ": OFF"
             BtnFlyNoclip.TextColor3 = Color3.fromRGB(200, 200, 200)
             if FlyNoclipLoop then FlyNoclipLoop:Disconnect() end
-            
             if Player.Character then
                 for _, part in pairs(Player.Character:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = true end end
                 local hum = Player.Character:FindFirstChild("Humanoid")
@@ -1135,9 +1362,7 @@ local NoclipLoop = RunService.Stepped:Connect(function()
             lastNoclipPos = hrp.Position
             hum:ChangeState(11) 
         end
-    else 
-        lastNoclipPos = nil 
-    end
+    else lastNoclipPos = nil end
 end)
 
 local RenderLoop = RunService.RenderStepped:Connect(function()
@@ -1153,25 +1378,17 @@ local RenderLoop = RunService.RenderStepped:Connect(function()
             hum.Health = math.huge
             hum.BreakJointsOnDeath = false 
             hum.RequiresNeck = false 
-            
             hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
             hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
             hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
             hum:SetStateEnabled(Enum.HumanoidStateType.Physics, false) 
-            
             local currentState = hum:GetState()
             if currentState == Enum.HumanoidStateType.Ragdoll or currentState == Enum.HumanoidStateType.FallingDown or currentState == Enum.HumanoidStateType.Dead or currentState == Enum.HumanoidStateType.Physics then
                 hum:ChangeState(Enum.HumanoidStateType.GettingUp)
             end
-            
-            if hrp then 
-                hrp.CustomPhysicalProperties = PhysicalProperties.new(100000, 0.3, 0.5, 1, 1) 
-            end
-
+            if hrp then hrp.CustomPhysicalProperties = PhysicalProperties.new(100000, 0.3, 0.5, 1, 1) end
             for _, v in pairs(char:GetDescendants()) do
-                if v:IsA("Motor6D") and not v.Enabled then
-                    v.Enabled = true
-                end
+                if v:IsA("Motor6D") and not v.Enabled then v.Enabled = true end
             end
         end)
     else 
@@ -1182,13 +1399,9 @@ local RenderLoop = RunService.RenderStepped:Connect(function()
     end
 
     local isVehicle = hum.SeatPart ~= nil
-    
     local newState = "Walk"
-    if Features.Fly then
-        newState = isVehicle and "CarFly" or "Fly"
-    else
-        newState = isVehicle and "Car" or "Walk"
-    end
+    if Features.Fly then newState = isVehicle and "CarFly" or "Fly"
+    else newState = isVehicle and "Car" or "Walk" end
     
     if CurrentSpeedState ~= newState then
         CurrentSpeedState = newState
@@ -1210,12 +1423,8 @@ local RenderLoop = RunService.RenderStepped:Connect(function()
                     seat.AssemblyLinearVelocity = Vector3.new(dir.X, vel.Y, dir.Z)
                 end
             end
-        elseif newState == "Walk" then
-            hum.WalkSpeed = Features.WalkSpeed
-        end
-    else
-        BtnSpeed.TextColor3 = Color3.fromRGB(200, 200, 200)
-    end
+        elseif newState == "Walk" then hum.WalkSpeed = Features.WalkSpeed end
+    else BtnSpeed.TextColor3 = Color3.fromRGB(200, 200, 200) end
     
     if Features.CustomJump then hum.UseJumpPower = true hum.JumpPower = Features.JumpValue end
 end)
@@ -1224,24 +1433,18 @@ BtnGod.MouseButton1Click:Connect(function()
     Features.GodMode = not Features.GodMode
     BtnGod.Text = string.split(BtnGod.Text, ":")[1] .. (Features.GodMode and ": ON" or ": OFF")
     BtnGod.TextColor3 = Features.GodMode and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
-    
     if Features.GodMode and Player.Character then
         local hum = Player.Character:FindFirstChildOfClass("Humanoid")
         if hum then
             hum.HealthChanged:Connect(function(newHealth)
-                if Features.GodMode and newHealth < hum.MaxHealth then
-                    hum.Health = hum.MaxHealth
-                end
+                if Features.GodMode and newHealth < hum.MaxHealth then hum.Health = hum.MaxHealth end
             end)
         end
-        
         pcall(function()
             if getconnections then
                 for _, v in pairs(Player.Character:GetDescendants()) do
                     if v:IsA("BasePart") then
-                        for _, conn in pairs(getconnections(v.Touched)) do
-                            conn:Disable()
-                        end
+                        for _, conn in pairs(getconnections(v.Touched)) do conn:Disable() end
                     end
                 end
                 Notify("God Mode", "تم تفعيل وضع الشبح المنيع (ضد لمس الكوارث)!", Color3.fromRGB(0, 255, 127))
@@ -1260,9 +1463,7 @@ BtnRevive.MouseButton1Click:Connect(function()
                 hum:ChangeState(Enum.HumanoidStateType.GettingUp)
                 hum.Health = hum.MaxHealth
                 for _, v in pairs(char:GetDescendants()) do
-                    if v:IsA("Motor6D") then
-                        v.Enabled = true 
-                    end
+                    if v:IsA("Motor6D") then v.Enabled = true end
                 end
             end)
             Notify("Force Revive", "تم الإنعاش مع الحفاظ على الانفنتوري!", Color3.fromRGB(0, 255, 127))
@@ -1273,7 +1474,6 @@ end)
 BtnSpeed.MouseButton1Click:Connect(function()
     Features.CustomSpeed = not Features.CustomSpeed
     UpdateSpeedDisplay()
-    
     if not Features.CustomSpeed and Player.Character and Player.Character:FindFirstChild("Humanoid") then 
         Player.Character.Humanoid.WalkSpeed = 16 
     end
@@ -1305,7 +1505,6 @@ BtnNoclip.MouseButton1Click:Connect(function()
     Features.Noclip = not Features.Noclip
     BtnNoclip.Text = string.split(BtnNoclip.Text, ":")[1] .. (Features.Noclip and ": ON" or ": OFF")
     BtnNoclip.TextColor3 = Features.Noclip and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
-    
     if not Features.Noclip and Player.Character then
         for _, part in pairs(Player.Character:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = true end end
     end
@@ -1384,7 +1583,6 @@ RestartBtn.TextColor3 = Color3.fromRGB(0, 212, 255)
 RestartBtn.Font = Enum.Font.GothamBlack
 RestartBtn.TextSize = 16
 RestartBtn.Parent = MainFrame
-
 local RestartGlow = Instance.new("UIStroke")
 RestartGlow.Color = Color3.fromRGB(0, 212, 255)
 RestartGlow.Transparency = 0.5
@@ -1407,7 +1605,6 @@ RestartBtn.MouseButton1Click:Connect(function()
     
     workspace.CurrentCamera.CameraSubject = Player.Character:WaitForChild("Humanoid")
     ScreenGui:Destroy()
-    
     pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/Ray2133231/Zoko2/main/main.lua"))() end)
 end)
 
@@ -1449,7 +1646,7 @@ task.spawn(function()
         local char = Player.Character or Player.CharacterAdded:Wait()
         local hrp = char:WaitForChild("HumanoidRootPart", 5)
         if hrp then
-            task.wait(1) -- تأخير بسيط عشان الماب يرسبن تمام
+            task.wait(1)
             hrp.CFrame = CFrame.new(autoJoinTarget.X, autoJoinTarget.Y, autoJoinTarget.Z)
             Notify("Auto Join", "تم نقلك لنقطة الحفظ التلقائية!", Color3.fromRGB(0, 255, 127))
         end
