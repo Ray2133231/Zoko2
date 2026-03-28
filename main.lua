@@ -13,7 +13,7 @@ local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "Zoko_UI"
 ScreenGui.Parent = Player:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling -- حل مشكلة الطبقات المخفية
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 _G.ZokoUI = ScreenGui
 
 -----------------------------------
@@ -178,7 +178,7 @@ ConfirmFrame.Size = UDim2.new(0, 240, 0, 130)
 ConfirmFrame.Position = UDim2.new(0.5, -120, 0.5, -65)
 ConfirmFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 ConfirmFrame.Visible = false
-ConfirmFrame.ZIndex = 50 -- الخلفية
+ConfirmFrame.ZIndex = 50
 Instance.new("UICorner", ConfirmFrame).CornerRadius = UDim.new(0, 10)
 Instance.new("UIStroke", ConfirmFrame).Color = Color3.fromRGB(255, 150, 0)
 
@@ -192,7 +192,7 @@ ConfirmText.Font = Enum.Font.GothamBold
 ConfirmText.TextSize = 14
 ConfirmText.TextWrapped = true
 ConfirmText.TextScaled = true
-ConfirmText.ZIndex = 51 -- النص فوق الخلفية
+ConfirmText.ZIndex = 51
 
 local BtnYes = Instance.new("TextButton", ConfirmFrame)
 BtnYes.Size = UDim2.new(0.4, 0, 0, 35)
@@ -203,7 +203,7 @@ BtnYes.TextColor3 = Color3.fromRGB(255, 255, 255)
 BtnYes.Font = Enum.Font.GothamBold
 BtnYes.TextSize = 14
 BtnYes.TextScaled = true
-BtnYes.ZIndex = 51 -- الزر فوق الخلفية
+BtnYes.ZIndex = 51
 Instance.new("UICorner", BtnYes).CornerRadius = UDim.new(0, 6)
 
 local BtnNo = Instance.new("TextButton", ConfirmFrame)
@@ -215,7 +215,7 @@ BtnNo.TextColor3 = Color3.fromRGB(255, 255, 255)
 BtnNo.Font = Enum.Font.GothamBold
 BtnNo.TextSize = 14
 BtnNo.TextScaled = true
-BtnNo.ZIndex = 51 -- الزر فوق الخلفية
+BtnNo.ZIndex = 51
 Instance.new("UICorner", BtnNo).CornerRadius = UDim.new(0, 6)
 
 local ConfirmAction = nil
@@ -328,7 +328,7 @@ ModalFrame.Size = UDim2.new(0, 220, 0, 120)
 ModalFrame.Position = UDim2.new(0.5, -110, 0.5, -60)
 ModalFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 ModalFrame.Visible = false
-ModalFrame.ZIndex = 50 -- رفع طبقة الخلفية
+ModalFrame.ZIndex = 50 
 Instance.new("UICorner", ModalFrame).CornerRadius = UDim.new(0, 10)
 Instance.new("UIStroke", ModalFrame).Color = Color3.fromRGB(0, 212, 255)
 
@@ -342,7 +342,7 @@ ModalInput.PlaceholderText = "Enter Checkpoint Name..."
 ModalInput.TextColor3 = Color3.fromRGB(255, 255, 255)
 ModalInput.Font = Enum.Font.GothamMedium
 ModalInput.TextSize = 14
-ModalInput.ZIndex = 51 -- فوق الخلفية
+ModalInput.ZIndex = 51
 Instance.new("UICorner", ModalInput).CornerRadius = UDim.new(0, 6)
 
 local BtnSaveModal = Instance.new("TextButton", ModalFrame)
@@ -354,7 +354,7 @@ BtnSaveModal.TextColor3 = Color3.fromRGB(255, 255, 255)
 BtnSaveModal.Font = Enum.Font.GothamBold
 BtnSaveModal.TextSize = 14
 BtnSaveModal.TextScaled = true
-BtnSaveModal.ZIndex = 51 -- فوق الخلفية
+BtnSaveModal.ZIndex = 51
 Instance.new("UICorner", BtnSaveModal).CornerRadius = UDim.new(0, 6)
 
 local BtnCancelModal = Instance.new("TextButton", ModalFrame)
@@ -366,14 +366,14 @@ BtnCancelModal.TextColor3 = Color3.fromRGB(255, 255, 255)
 BtnCancelModal.Font = Enum.Font.GothamBold
 BtnCancelModal.TextSize = 14
 BtnCancelModal.TextScaled = true
-BtnCancelModal.ZIndex = 51 -- فوق الخلفية
+BtnCancelModal.ZIndex = 51
 Instance.new("UICorner", BtnCancelModal).CornerRadius = UDim.new(0, 6)
 
 local ContextMenu = Instance.new("Frame", ScreenGui)
 ContextMenu.Size = UDim2.new(0, 150, 0, 105)
 ContextMenu.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 ContextMenu.Visible = false
-ContextMenu.ZIndex = 50 -- رفع طبقة المودل
+ContextMenu.ZIndex = 50
 Instance.new("UICorner", ContextMenu).CornerRadius = UDim.new(0, 6)
 Instance.new("UIStroke", ContextMenu).Color = Color3.fromRGB(100, 100, 100)
 
@@ -458,7 +458,7 @@ local function EndDrag()
             if icn then icn.ImageTransparency = 0 end
         end
         
-        -- حفظ الترتيب الجديد في TempCheckpoints بناءً على الـ LayoutOrder الحالي
+        -- حفظ الترتيب الجديد في TempCheckpoints
         local btns = {}
         for _, btn in pairs(TpScroll:GetChildren()) do
             if btn:IsA("TextButton") and btn:FindFirstChild("DataName") then
@@ -466,10 +466,21 @@ local function EndDrag()
             end
         end
         table.sort(btns, function(a, b) return a.LOrder < b.LOrder end)
+        
+        -- التحقق هل المستخدم بدل شيء فعلياً؟
+        local hasChanged = false
         for i, b in ipairs(btns) do
             if TempCheckpoints[b.Name] then
+                if TempCheckpoints[b.Name].Order ~= i then hasChanged = true end
                 TempCheckpoints[b.Name].Order = i
             end
+        end
+        
+        -- إذا تم التبديل الفعلي، نظهر أزرار الحفظ والإلغاء
+        if hasChanged then
+            BtnSaveOrder.Visible = true
+            BtnCancelOrder.Visible = true
+            TxtOrderMode.Text = "تأكيد التعديلات؟"
         end
     end
 end
@@ -497,7 +508,7 @@ local function RefreshTpList()
         local btn = Instance.new("TextButton", TpScroll)
         btn.Size = UDim2.new(0.95, 0, 0, 30)
         btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-        btn.LayoutOrder = item.Data.Order -- الترتيب
+        btn.LayoutOrder = item.Data.Order 
         
         local dn = Instance.new("StringValue", btn)
         dn.Name = "DataName"
@@ -524,7 +535,7 @@ local function RefreshTpList()
             DragIcon.Size = UDim2.new(0, 20, 0, 20)
             DragIcon.Position = UDim2.new(1, -25, 0.5, -10)
             DragIcon.BackgroundTransparency = 1
-            DragIcon.Image = "rbxassetid://3926305904" -- أيقونة سحب
+            DragIcon.Image = "rbxassetid://3926305904" 
             DragIcon.ImageRectOffset = Vector2.new(36, 36)
             DragIcon.ImageRectSize = Vector2.new(36, 36)
             DragIcon.ImageColor3 = Color3.fromRGB(150, 150, 150)
@@ -575,8 +586,10 @@ BtnToggleReorder.MouseButton1Click:Connect(function()
         TempCheckpoints = HttpService:JSONDecode(HttpService:JSONEncode(SavedCheckpoints[CurrentPlaceId]))
         BtnToggleReorder.ImageColor3 = Color3.fromRGB(255, 150, 0)
         BtnAddNewTp.Visible = false
-        BtnSaveOrder.Visible = true
-        BtnCancelOrder.Visible = true
+        -- الأزرار مخفية في البداية الين تسحب وتبدل فعلياً
+        BtnSaveOrder.Visible = false
+        BtnCancelOrder.Visible = false
+        TxtOrderMode.Text = "اسحب للترتيب (Drag to Reorder)"
         TxtOrderMode.Visible = true
     else
         BtnToggleReorder.ImageColor3 = Color3.fromRGB(200, 200, 200)
@@ -1066,7 +1079,6 @@ BtnCmdScare.MouseButton1Click:Connect(function()
     end
 end)
 
-
 local Features = {
     Fly = false, FlyNoclip = false, GodMode = false, InfJump = false, Noclip = false, 
     InstantPrompt = false, SuperHit = false, AntiAFK = true, ControlWand = false, ESP = false,
@@ -1123,7 +1135,18 @@ end
 local BtnOpenTeleports = CreateButton("Checkpoints", ScrollFrame)
 BtnOpenTeleports.MouseButton1Click:Connect(function()
     TpFrame.Visible = not TpFrame.Visible
-    if TpFrame.Visible then RefreshTpList() end
+    if TpFrame.Visible then
+        -- إغلاق وضع التعديل (الترتيب) أوامر تفتح القائمة الجديدة عشان تطلع لك بشكلها الأساسي
+        IsReorderMode = false
+        BtnToggleReorder.ImageColor3 = Color3.fromRGB(200, 200, 200)
+        BtnAddNewTp.Visible = true
+        BtnSaveOrder.Visible = false
+        BtnCancelOrder.Visible = false
+        TxtOrderMode.Visible = false
+        ContextMenu.Visible = false
+        ModalFrame.Visible = false
+        RefreshTpList()
+    end
 end)
 
 local BtnAimbot = CreateButton("Aimbot A: OFF", ScrollFrame)
@@ -1187,7 +1210,6 @@ local function GetClosestToCenter()
     local closestTarget = nil
     
     for _, v in pairs(game.Players:GetPlayers()) do
-        -- شرط جديد: يتجاهل اللاعب إذا كان في نفس فريقك (تحديث الإيم بوت)
         local isEnemy = true
         if Player.Team and v.Team and Player.Team == v.Team then
             isEnemy = false
