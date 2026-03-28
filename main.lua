@@ -13,6 +13,7 @@ local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "Zoko_UI"
 ScreenGui.Parent = Player:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling -- حل مشكلة الطبقات المخفية
 _G.ZokoUI = ScreenGui
 
 -----------------------------------
@@ -132,6 +133,7 @@ local function Notify(titleText, descText, color)
     NotifFrame.Position = UDim2.new(1, 10, 0.8, 0)
     NotifFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
     NotifFrame.BackgroundTransparency = 0.2
+    NotifFrame.ZIndex = 200
     NotifFrame.Parent = ScreenGui
     Instance.new("UICorner", NotifFrame).CornerRadius = UDim.new(0, 10)
     local NStroke = Instance.new("UIStroke", NotifFrame)
@@ -146,6 +148,7 @@ local function Notify(titleText, descText, color)
     NTitle.TextColor3 = useColor
     NTitle.Font = Enum.Font.GothamBold
     NTitle.TextSize = 16
+    NTitle.ZIndex = 201
     NTitle.TextXAlignment = Enum.TextXAlignment.Left
 
     local NDesc = Instance.new("TextLabel", NotifFrame)
@@ -156,6 +159,7 @@ local function Notify(titleText, descText, color)
     NDesc.TextColor3 = Color3.fromRGB(200, 200, 200)
     NDesc.Font = Enum.Font.GothamMedium
     NDesc.TextSize = 13
+    NDesc.ZIndex = 201
     NDesc.TextXAlignment = Enum.TextXAlignment.Left
     NDesc.TextWrapped = true
 
@@ -174,7 +178,7 @@ ConfirmFrame.Size = UDim2.new(0, 240, 0, 130)
 ConfirmFrame.Position = UDim2.new(0.5, -120, 0.5, -65)
 ConfirmFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 ConfirmFrame.Visible = false
-ConfirmFrame.ZIndex = 50
+ConfirmFrame.ZIndex = 50 -- الخلفية
 Instance.new("UICorner", ConfirmFrame).CornerRadius = UDim.new(0, 10)
 Instance.new("UIStroke", ConfirmFrame).Color = Color3.fromRGB(255, 150, 0)
 
@@ -187,6 +191,8 @@ ConfirmText.TextColor3 = Color3.fromRGB(255, 255, 255)
 ConfirmText.Font = Enum.Font.GothamBold
 ConfirmText.TextSize = 14
 ConfirmText.TextWrapped = true
+ConfirmText.TextScaled = true
+ConfirmText.ZIndex = 51 -- النص فوق الخلفية
 
 local BtnYes = Instance.new("TextButton", ConfirmFrame)
 BtnYes.Size = UDim2.new(0.4, 0, 0, 35)
@@ -195,6 +201,9 @@ BtnYes.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
 BtnYes.Text = "نعم (Yes)"
 BtnYes.TextColor3 = Color3.fromRGB(255, 255, 255)
 BtnYes.Font = Enum.Font.GothamBold
+BtnYes.TextSize = 14
+BtnYes.TextScaled = true
+BtnYes.ZIndex = 51 -- الزر فوق الخلفية
 Instance.new("UICorner", BtnYes).CornerRadius = UDim.new(0, 6)
 
 local BtnNo = Instance.new("TextButton", ConfirmFrame)
@@ -204,6 +213,9 @@ BtnNo.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
 BtnNo.Text = "إلغاء (No)"
 BtnNo.TextColor3 = Color3.fromRGB(255, 255, 255)
 BtnNo.Font = Enum.Font.GothamBold
+BtnNo.TextSize = 14
+BtnNo.TextScaled = true
+BtnNo.ZIndex = 51 -- الزر فوق الخلفية
 Instance.new("UICorner", BtnNo).CornerRadius = UDim.new(0, 6)
 
 local ConfirmAction = nil
@@ -272,7 +284,7 @@ TpScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 local TpLayout = Instance.new("UIListLayout", TpScroll)
 TpLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 TpLayout.Padding = UDim.new(0, 5)
-TpLayout.SortOrder = Enum.SortOrder.LayoutOrder -- مهم جداً للترتيب
+TpLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
 local BtnAddNewTp = Instance.new("TextButton", TpFrame)
 BtnAddNewTp.Size = UDim2.new(0.9, 0, 0, 30)
@@ -316,7 +328,7 @@ ModalFrame.Size = UDim2.new(0, 220, 0, 120)
 ModalFrame.Position = UDim2.new(0.5, -110, 0.5, -60)
 ModalFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 ModalFrame.Visible = false
-ModalFrame.ZIndex = 20
+ModalFrame.ZIndex = 50 -- رفع طبقة الخلفية
 Instance.new("UICorner", ModalFrame).CornerRadius = UDim.new(0, 10)
 Instance.new("UIStroke", ModalFrame).Color = Color3.fromRGB(0, 212, 255)
 
@@ -325,11 +337,12 @@ ModalInput.Size = UDim2.new(0.9, 0, 0, 35)
 ModalInput.Position = UDim2.new(0.05, 0, 0, 20)
 ModalInput.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 ModalInput.Text = ""
-ModalInput.ClearTextOnFocus = false -- هذي تحل مشكلة اختفاء النص
+ModalInput.ClearTextOnFocus = false
 ModalInput.PlaceholderText = "Enter Checkpoint Name..."
 ModalInput.TextColor3 = Color3.fromRGB(255, 255, 255)
 ModalInput.Font = Enum.Font.GothamMedium
 ModalInput.TextSize = 14
+ModalInput.ZIndex = 51 -- فوق الخلفية
 Instance.new("UICorner", ModalInput).CornerRadius = UDim.new(0, 6)
 
 local BtnSaveModal = Instance.new("TextButton", ModalFrame)
@@ -339,6 +352,9 @@ BtnSaveModal.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
 BtnSaveModal.Text = "Save"
 BtnSaveModal.TextColor3 = Color3.fromRGB(255, 255, 255)
 BtnSaveModal.Font = Enum.Font.GothamBold
+BtnSaveModal.TextSize = 14
+BtnSaveModal.TextScaled = true
+BtnSaveModal.ZIndex = 51 -- فوق الخلفية
 Instance.new("UICorner", BtnSaveModal).CornerRadius = UDim.new(0, 6)
 
 local BtnCancelModal = Instance.new("TextButton", ModalFrame)
@@ -348,13 +364,16 @@ BtnCancelModal.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
 BtnCancelModal.Text = "Cancel"
 BtnCancelModal.TextColor3 = Color3.fromRGB(255, 255, 255)
 BtnCancelModal.Font = Enum.Font.GothamBold
+BtnCancelModal.TextSize = 14
+BtnCancelModal.TextScaled = true
+BtnCancelModal.ZIndex = 51 -- فوق الخلفية
 Instance.new("UICorner", BtnCancelModal).CornerRadius = UDim.new(0, 6)
 
 local ContextMenu = Instance.new("Frame", ScreenGui)
 ContextMenu.Size = UDim2.new(0, 150, 0, 105)
 ContextMenu.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 ContextMenu.Visible = false
-ContextMenu.ZIndex = 10
+ContextMenu.ZIndex = 50 -- رفع طبقة المودل
 Instance.new("UICorner", ContextMenu).CornerRadius = UDim.new(0, 6)
 Instance.new("UIStroke", ContextMenu).Color = Color3.fromRGB(100, 100, 100)
 
@@ -369,6 +388,7 @@ BtnCtxAutoJoin.Text = "Auto Join: OFF"
 BtnCtxAutoJoin.TextColor3 = Color3.fromRGB(200, 200, 200)
 BtnCtxAutoJoin.Font = Enum.Font.GothamMedium
 BtnCtxAutoJoin.TextSize = 12
+BtnCtxAutoJoin.ZIndex = 51
 Instance.new("UICorner", BtnCtxAutoJoin).CornerRadius = UDim.new(0, 4)
 
 local BtnCtxRename = Instance.new("TextButton", ContextMenu)
@@ -378,6 +398,7 @@ BtnCtxRename.Text = "Rename"
 BtnCtxRename.TextColor3 = Color3.fromRGB(255, 200, 0)
 BtnCtxRename.Font = Enum.Font.GothamBold
 BtnCtxRename.TextSize = 12
+BtnCtxRename.ZIndex = 51
 Instance.new("UICorner", BtnCtxRename).CornerRadius = UDim.new(0, 4)
 
 local BtnCtxDelete = Instance.new("TextButton", ContextMenu)
@@ -387,6 +408,7 @@ BtnCtxDelete.Text = "Delete"
 BtnCtxDelete.TextColor3 = Color3.fromRGB(255, 50, 50)
 BtnCtxDelete.Font = Enum.Font.GothamBold
 BtnCtxDelete.TextSize = 12
+BtnCtxDelete.ZIndex = 51
 Instance.new("UICorner", BtnCtxDelete).CornerRadius = UDim.new(0, 4)
 
 local SelectedCpName = ""
@@ -1165,7 +1187,13 @@ local function GetClosestToCenter()
     local closestTarget = nil
     
     for _, v in pairs(game.Players:GetPlayers()) do
-        if v ~= Player and v.Character and v.Character:FindFirstChild("Head") and v.Character:FindFirstChild("Humanoid") and v.Character.Humanoid.Health > 0 then
+        -- شرط جديد: يتجاهل اللاعب إذا كان في نفس فريقك (تحديث الإيم بوت)
+        local isEnemy = true
+        if Player.Team and v.Team and Player.Team == v.Team then
+            isEnemy = false
+        end
+
+        if v ~= Player and isEnemy and v.Character and v.Character:FindFirstChild("Head") and v.Character:FindFirstChild("Humanoid") and v.Character.Humanoid.Health > 0 then
             local pos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(v.Character.Head.Position)
             if onScreen then
                 local dist = (Vector2.new(pos.X, pos.Y) - center).Magnitude
