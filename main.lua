@@ -171,70 +171,6 @@ local function Notify(titleText, descText, color)
 end
 
 -----------------------------------
--- مودل تأكيد الرسائل (Confirm) ---
------------------------------------
-local ConfirmFrame = Instance.new("Frame", ScreenGui)
-ConfirmFrame.Size = UDim2.new(0, 240, 0, 130)
-ConfirmFrame.Position = UDim2.new(0.5, -120, 0.5, -65)
-ConfirmFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-ConfirmFrame.Visible = false
-ConfirmFrame.ZIndex = 50
-Instance.new("UICorner", ConfirmFrame).CornerRadius = UDim.new(0, 10)
-Instance.new("UIStroke", ConfirmFrame).Color = Color3.fromRGB(255, 150, 0)
-
-local ConfirmText = Instance.new("TextLabel", ConfirmFrame)
-ConfirmText.Size = UDim2.new(1, -20, 0, 60)
-ConfirmText.Position = UDim2.new(0, 10, 0, 10)
-ConfirmText.BackgroundTransparency = 1
-ConfirmText.Text = "هل أنت متأكد؟"
-ConfirmText.TextColor3 = Color3.fromRGB(255, 255, 255)
-ConfirmText.Font = Enum.Font.GothamBold
-ConfirmText.TextSize = 14
-ConfirmText.TextWrapped = true
-ConfirmText.TextScaled = true
-ConfirmText.ZIndex = 51
-
-local BtnYes = Instance.new("TextButton", ConfirmFrame)
-BtnYes.Size = UDim2.new(0.4, 0, 0, 35)
-BtnYes.Position = UDim2.new(0.05, 0, 1, -45)
-BtnYes.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
-BtnYes.Text = "نعم (Yes)"
-BtnYes.TextColor3 = Color3.fromRGB(255, 255, 255)
-BtnYes.Font = Enum.Font.GothamBold
-BtnYes.TextSize = 14
-BtnYes.TextScaled = true
-BtnYes.ZIndex = 51
-Instance.new("UICorner", BtnYes).CornerRadius = UDim.new(0, 6)
-
-local BtnNo = Instance.new("TextButton", ConfirmFrame)
-BtnNo.Size = UDim2.new(0.4, 0, 0, 35)
-BtnNo.Position = UDim2.new(0.55, 0, 1, -45)
-BtnNo.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-BtnNo.Text = "إلغاء (No)"
-BtnNo.TextColor3 = Color3.fromRGB(255, 255, 255)
-BtnNo.Font = Enum.Font.GothamBold
-BtnNo.TextSize = 14
-BtnNo.TextScaled = true
-BtnNo.ZIndex = 51
-Instance.new("UICorner", BtnNo).CornerRadius = UDim.new(0, 6)
-
-local ConfirmAction = nil
-BtnYes.MouseButton1Click:Connect(function()
-    ConfirmFrame.Visible = false
-    if ConfirmAction then ConfirmAction(true) end
-end)
-BtnNo.MouseButton1Click:Connect(function()
-    ConfirmFrame.Visible = false
-    if ConfirmAction then ConfirmAction(false) end
-end)
-
-local function ShowConfirm(text, callback)
-    ConfirmText.Text = text
-    ConfirmAction = callback
-    ConfirmFrame.Visible = true
-end
-
------------------------------------
 -- واجهة الانتقالات (Teleports) ---
 -----------------------------------
 local TpFrame = Instance.new("Frame")
@@ -265,7 +201,6 @@ BtnCloseTp.Text = "X"
 BtnCloseTp.TextColor3 = Color3.fromRGB(255, 50, 50)
 BtnCloseTp.Font = Enum.Font.GothamBold
 BtnCloseTp.TextSize = 18
-BtnCloseTp.MouseButton1Click:Connect(function() TpFrame.Visible = false end)
 
 local BtnToggleReorder = Instance.new("ImageButton", TpFrame)
 BtnToggleReorder.Size = UDim2.new(0, 20, 0, 20)
@@ -296,7 +231,6 @@ BtnAddNewTp.Font = Enum.Font.GothamBold
 BtnAddNewTp.TextSize = 14
 Instance.new("UICorner", BtnAddNewTp).CornerRadius = UDim.new(0, 6)
 
--- أزرار الحفظ والإلغاء الجديدة (بدل الأيقونات)
 local BtnSaveOrder = Instance.new("TextButton", TpFrame)
 BtnSaveOrder.Size = UDim2.new(0.42, 0, 0, 30)
 BtnSaveOrder.Position = UDim2.new(0.05, 0, 1, -40)
@@ -423,9 +357,6 @@ local RenameMode = false
 local IsReorderMode = false
 local TempCheckpoints = {}
 
------------------------------------
--- نظام السحب والإفلات (Drag & Drop)
------------------------------------
 local DragInfo = {
     IsDragging = false,
     Ghost = nil,
@@ -433,71 +364,9 @@ local DragInfo = {
     OffsetY = 0
 }
 
-UIS.InputChanged:Connect(function(input)
-    if IsReorderMode and DragInfo.IsDragging and DragInfo.Ghost then
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            local newY = input.Position.Y - DragInfo.OffsetY
-            DragInfo.Ghost.Position = UDim2.new(0, DragInfo.Placeholder.AbsolutePosition.X, 0, newY)
-            
-            local ghostCenter = DragInfo.Ghost.AbsolutePosition.Y + (DragInfo.Ghost.AbsoluteSize.Y / 2)
-            for _, otherBtn in pairs(TpScroll:GetChildren()) do
-                if otherBtn:IsA("TextButton") and otherBtn ~= DragInfo.Placeholder then
-                    local otherCenter = otherBtn.AbsolutePosition.Y + (otherBtn.AbsoluteSize.Y / 2)
-                    if math.abs(ghostCenter - otherCenter) < (otherBtn.AbsoluteSize.Y / 2) then
-                        local tempOrder = DragInfo.Placeholder.LayoutOrder
-                        DragInfo.Placeholder.LayoutOrder = otherBtn.LayoutOrder
-                        otherBtn.LayoutOrder = tempOrder
-                    end
-                end
-            end
-        end
-    end
-end)
-
-local function EndDrag()
-    if DragInfo.IsDragging then
-        DragInfo.IsDragging = false
-        if DragInfo.Ghost then DragInfo.Ghost:Destroy() end
-        if DragInfo.Placeholder then
-            DragInfo.Placeholder.BackgroundTransparency = 0
-            DragInfo.Placeholder.TextTransparency = 0
-            local icn = DragInfo.Placeholder:FindFirstChild("DragIcon")
-            if icn then icn.ImageTransparency = 0 end
-        end
-        
-        -- حفظ الترتيب الجديد في TempCheckpoints
-        local btns = {}
-        for _, btn in pairs(TpScroll:GetChildren()) do
-            if btn:IsA("TextButton") and btn:FindFirstChild("DataName") then
-                table.insert(btns, {Name = btn.DataName.Value, LOrder = btn.LayoutOrder})
-            end
-        end
-        table.sort(btns, function(a, b) return a.LOrder < b.LOrder end)
-        
-        -- التحقق هل المستخدم بدل شيء فعلياً؟
-        local hasChanged = false
-        for i, b in ipairs(btns) do
-            if TempCheckpoints[b.Name] then
-                if TempCheckpoints[b.Name].Order ~= i then hasChanged = true end
-                TempCheckpoints[b.Name].Order = i
-            end
-        end
-        
-        -- إذا تم التبديل الفعلي، نظهر أزرار الحفظ والإلغاء ونخفي النص
-        if hasChanged then
-            TxtOrderMode.Visible = false
-            BtnSaveOrder.Visible = true
-            BtnCancelOrder.Visible = true
-        end
-    end
-end
-
-UIS.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        EndDrag()
-    end
-end)
-
+-----------------------------------
+-- دوال التحديث والإلغاء للإصلاح --
+-----------------------------------
 local function RefreshTpList()
     for _, v in pairs(TpScroll:GetChildren()) do
         if v:IsA("Frame") or v:IsA("TextButton") then v:Destroy() end
@@ -587,52 +456,132 @@ local function RefreshTpList()
     TpScroll.CanvasSize = UDim2.new(0, 0, 0, ySize)
 end
 
-BtnToggleReorder.MouseButton1Click:Connect(function()
-    IsReorderMode = not IsReorderMode
+-- دالة مركزية تضمن الإلغاء الشامل لأي تعديلات وهمية
+local function CancelEditMode()
     if IsReorderMode then
-        TempCheckpoints = HttpService:JSONDecode(HttpService:JSONEncode(SavedCheckpoints[CurrentPlaceId]))
+        IsReorderMode = false
+        BtnToggleReorder.ImageColor3 = Color3.fromRGB(200, 200, 200)
+        BtnAddNewTp.Visible = true
+        BtnSaveOrder.Visible = false
+        BtnCancelOrder.Visible = false
+        TxtOrderMode.Visible = false
+        
+        -- تفريغ التعديلات المؤقتة لضمان رجوعها للأصل
+        TempCheckpoints = {}
+        RefreshTpList()
+    end
+end
+
+-----------------------------------
+-- نظام السحب والإفلات (Drag & Drop)
+-----------------------------------
+UIS.InputChanged:Connect(function(input)
+    if IsReorderMode and DragInfo.IsDragging and DragInfo.Ghost then
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            local newY = input.Position.Y - DragInfo.OffsetY
+            DragInfo.Ghost.Position = UDim2.new(0, DragInfo.Placeholder.AbsolutePosition.X, 0, newY)
+            
+            local ghostCenter = DragInfo.Ghost.AbsolutePosition.Y + (DragInfo.Ghost.AbsoluteSize.Y / 2)
+            for _, otherBtn in pairs(TpScroll:GetChildren()) do
+                if otherBtn:IsA("TextButton") and otherBtn ~= DragInfo.Placeholder then
+                    local otherCenter = otherBtn.AbsolutePosition.Y + (otherBtn.AbsoluteSize.Y / 2)
+                    if math.abs(ghostCenter - otherCenter) < (otherBtn.AbsoluteSize.Y / 2) then
+                        local tempOrder = DragInfo.Placeholder.LayoutOrder
+                        DragInfo.Placeholder.LayoutOrder = otherBtn.LayoutOrder
+                        otherBtn.LayoutOrder = tempOrder
+                    end
+                end
+            end
+        end
+    end
+end)
+
+local function EndDrag()
+    if DragInfo.IsDragging then
+        DragInfo.IsDragging = false
+        if DragInfo.Ghost then DragInfo.Ghost:Destroy() end
+        if DragInfo.Placeholder then
+            DragInfo.Placeholder.BackgroundTransparency = 0
+            DragInfo.Placeholder.TextTransparency = 0
+            local icn = DragInfo.Placeholder:FindFirstChild("DragIcon")
+            if icn then icn.ImageTransparency = 0 end
+        end
+        
+        local btns = {}
+        for _, btn in pairs(TpScroll:GetChildren()) do
+            if btn:IsA("TextButton") and btn:FindFirstChild("DataName") then
+                table.insert(btns, {Name = btn.DataName.Value, LOrder = btn.LayoutOrder})
+            end
+        end
+        table.sort(btns, function(a, b) return a.LOrder < b.LOrder end)
+        
+        local hasChanged = false
+        for i, b in ipairs(btns) do
+            if TempCheckpoints[b.Name] then
+                if TempCheckpoints[b.Name].Order ~= i then hasChanged = true end
+                TempCheckpoints[b.Name].Order = i
+            end
+        end
+        
+        if hasChanged then
+            TxtOrderMode.Visible = false
+            BtnSaveOrder.Visible = true
+            BtnCancelOrder.Visible = true
+        end
+    end
+end
+
+UIS.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        EndDrag()
+    end
+end)
+
+-- أزرار القائمة وعمليات الحفظ والإلغاء
+BtnToggleReorder.MouseButton1Click:Connect(function()
+    if IsReorderMode then
+        CancelEditMode() -- إذا طفيتها، يتلغي كل شيء ما انحفظ ويرجع لأصله
+    else
+        IsReorderMode = true
+        -- نسخ آمن للبيانات
+        TempCheckpoints = {}
+        for k, v in pairs(SavedCheckpoints[CurrentPlaceId] or {}) do
+            TempCheckpoints[k] = {X = v.X, Y = v.Y, Z = v.Z, AutoJoin = v.AutoJoin, Order = v.Order}
+        end
+        
         BtnToggleReorder.ImageColor3 = Color3.fromRGB(255, 150, 0)
         BtnAddNewTp.Visible = false
         BtnSaveOrder.Visible = false
         BtnCancelOrder.Visible = false
         TxtOrderMode.Text = "اسحب للترتيب (Drag to Reorder)"
         TxtOrderMode.Visible = true
-    else
-        BtnToggleReorder.ImageColor3 = Color3.fromRGB(200, 200, 200)
-        BtnAddNewTp.Visible = true
-        BtnSaveOrder.Visible = false
-        BtnCancelOrder.Visible = false
-        TxtOrderMode.Visible = false
+        RefreshTpList()
     end
-    RefreshTpList()
 end)
 
--- تم التعديل هنا لإنهاء وحفظ الترتيب فوراً وبدون تأخير رسالة التأكيد
 BtnSaveOrder.MouseButton1Click:Connect(function()
+    SavedCheckpoints[CurrentPlaceId] = TempCheckpoints
+    SaveCheckpoints()
+    
+    IsReorderMode = false
+    BtnToggleReorder.ImageColor3 = Color3.fromRGB(200, 200, 200)
+    BtnAddNewTp.Visible = true
     BtnSaveOrder.Visible = false
     BtnCancelOrder.Visible = false
     TxtOrderMode.Visible = false
-    BtnToggleReorder.ImageColor3 = Color3.fromRGB(200, 200, 200)
-    IsReorderMode = false
-    BtnAddNewTp.Visible = true
-
-    SavedCheckpoints[CurrentPlaceId] = TempCheckpoints
-    SaveCheckpoints()
+    
     Notify("Saved", "تم حفظ الترتيب الجديد بنجاح!", Color3.fromRGB(0, 255, 127))
     RefreshTpList()
 end)
 
--- تم التعديل هنا للإلغاء فوراً وبدون تأخير
 BtnCancelOrder.MouseButton1Click:Connect(function()
-    BtnSaveOrder.Visible = false
-    BtnCancelOrder.Visible = false
-    TxtOrderMode.Visible = false
-    BtnToggleReorder.ImageColor3 = Color3.fromRGB(200, 200, 200)
-    IsReorderMode = false
-    BtnAddNewTp.Visible = true
+    CancelEditMode()
+    Notify("Cancelled", "تم إلغاء التعديلات ورجوع الترتيب الأصلي.", Color3.fromRGB(255, 50, 50))
+end)
 
-    Notify("Cancelled", "تم إلغاء التبديلات.", Color3.fromRGB(255, 50, 50))
-    RefreshTpList()
+BtnCloseTp.MouseButton1Click:Connect(function() 
+    TpFrame.Visible = false 
+    CancelEditMode() -- إذا قفل القائمة بالغلط، يتلغي وضع التعديل وترجع النقاط لمكانها
 end)
 
 UIS.InputBegan:Connect(function(input)
@@ -1134,16 +1083,10 @@ local BtnOpenTeleports = CreateButton("Checkpoints", ScrollFrame)
 BtnOpenTeleports.MouseButton1Click:Connect(function()
     TpFrame.Visible = not TpFrame.Visible
     if TpFrame.Visible then
-        -- إغلاق وضع التعديل (الترتيب) أوامر تفتح القائمة الجديدة عشان تطلع لك بشكلها الأساسي
-        IsReorderMode = false
-        BtnToggleReorder.ImageColor3 = Color3.fromRGB(200, 200, 200)
-        BtnAddNewTp.Visible = true
-        BtnSaveOrder.Visible = false
-        BtnCancelOrder.Visible = false
-        TxtOrderMode.Visible = false
-        ContextMenu.Visible = false
-        ModalFrame.Visible = false
+        CancelEditMode()
         RefreshTpList()
+    else
+        CancelEditMode()
     end
 end)
 
