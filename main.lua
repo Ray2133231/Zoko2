@@ -296,19 +296,26 @@ BtnAddNewTp.Font = Enum.Font.GothamBold
 BtnAddNewTp.TextSize = 14
 Instance.new("UICorner", BtnAddNewTp).CornerRadius = UDim.new(0, 6)
 
-local BtnSaveOrder = Instance.new("ImageButton", TpFrame)
-BtnSaveOrder.Size = UDim2.new(0, 30, 0, 30)
+-- أزرار الحفظ والإلغاء الجديدة (بدل الأيقونات)
+local BtnSaveOrder = Instance.new("TextButton", TpFrame)
+BtnSaveOrder.Size = UDim2.new(0.42, 0, 0, 30)
 BtnSaveOrder.Position = UDim2.new(0.05, 0, 1, -40)
 BtnSaveOrder.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
-BtnSaveOrder.Image = "rbxassetid://6031280882"
+BtnSaveOrder.Text = "✔ حفظ"
+BtnSaveOrder.TextColor3 = Color3.fromRGB(255, 255, 255)
+BtnSaveOrder.Font = Enum.Font.GothamBold
+BtnSaveOrder.TextSize = 14
 BtnSaveOrder.Visible = false
 Instance.new("UICorner", BtnSaveOrder).CornerRadius = UDim.new(0, 6)
 
-local BtnCancelOrder = Instance.new("ImageButton", TpFrame)
-BtnCancelOrder.Size = UDim2.new(0, 30, 0, 30)
-BtnCancelOrder.Position = UDim2.new(0.95, -30, 1, -40)
+local BtnCancelOrder = Instance.new("TextButton", TpFrame)
+BtnCancelOrder.Size = UDim2.new(0.42, 0, 0, 30)
+BtnCancelOrder.Position = UDim2.new(0.53, 0, 1, -40)
 BtnCancelOrder.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-BtnCancelOrder.Image = "rbxassetid://6031094678"
+BtnCancelOrder.Text = "✖ إلغاء"
+BtnCancelOrder.TextColor3 = Color3.fromRGB(255, 255, 255)
+BtnCancelOrder.Font = Enum.Font.GothamBold
+BtnCancelOrder.TextSize = 14
 BtnCancelOrder.Visible = false
 Instance.new("UICorner", BtnCancelOrder).CornerRadius = UDim.new(0, 6)
 
@@ -476,11 +483,11 @@ local function EndDrag()
             end
         end
         
-        -- إذا تم التبديل الفعلي، نظهر أزرار الحفظ والإلغاء
+        -- إذا تم التبديل الفعلي، نظهر أزرار الحفظ والإلغاء ونخفي النص
         if hasChanged then
+            TxtOrderMode.Visible = false
             BtnSaveOrder.Visible = true
             BtnCancelOrder.Visible = true
-            TxtOrderMode.Text = "تأكيد التعديلات؟"
         end
     end
 end
@@ -586,7 +593,6 @@ BtnToggleReorder.MouseButton1Click:Connect(function()
         TempCheckpoints = HttpService:JSONDecode(HttpService:JSONEncode(SavedCheckpoints[CurrentPlaceId]))
         BtnToggleReorder.ImageColor3 = Color3.fromRGB(255, 150, 0)
         BtnAddNewTp.Visible = false
-        -- الأزرار مخفية في البداية الين تسحب وتبدل فعلياً
         BtnSaveOrder.Visible = false
         BtnCancelOrder.Visible = false
         TxtOrderMode.Text = "اسحب للترتيب (Drag to Reorder)"
@@ -601,40 +607,32 @@ BtnToggleReorder.MouseButton1Click:Connect(function()
     RefreshTpList()
 end)
 
+-- تم التعديل هنا لإنهاء وحفظ الترتيب فوراً وبدون تأخير رسالة التأكيد
 BtnSaveOrder.MouseButton1Click:Connect(function()
-    ShowConfirm("هل متأكد أنك تريد تبديل الترتيب وحفظه؟", function(yes)
-        if yes then
-            SavedCheckpoints[CurrentPlaceId] = TempCheckpoints
-            SaveCheckpoints()
-            Notify("Saved", "تم حفظ الترتيب الجديد بنجاح!", Color3.fromRGB(0, 255, 127))
-            
-            TpScroll.Position = UDim2.new(0, -20, 0, 35)
-            TpScroll:TweenPosition(UDim2.new(0, 5, 0, 35), "Out", "Back", 0.3, true)
-            
-            BtnToggleReorder.ImageColor3 = Color3.fromRGB(200, 200, 200)
-            IsReorderMode = false
-            BtnAddNewTp.Visible = true
-            BtnSaveOrder.Visible = false
-            BtnCancelOrder.Visible = false
-            TxtOrderMode.Visible = false
-            RefreshTpList()
-        end
-    end)
+    BtnSaveOrder.Visible = false
+    BtnCancelOrder.Visible = false
+    TxtOrderMode.Visible = false
+    BtnToggleReorder.ImageColor3 = Color3.fromRGB(200, 200, 200)
+    IsReorderMode = false
+    BtnAddNewTp.Visible = true
+
+    SavedCheckpoints[CurrentPlaceId] = TempCheckpoints
+    SaveCheckpoints()
+    Notify("Saved", "تم حفظ الترتيب الجديد بنجاح!", Color3.fromRGB(0, 255, 127))
+    RefreshTpList()
 end)
 
+-- تم التعديل هنا للإلغاء فوراً وبدون تأخير
 BtnCancelOrder.MouseButton1Click:Connect(function()
-    ShowConfirm("هل متأكد أنك تريد إلغاء الترتيب؟", function(yes)
-        if yes then
-            Notify("Cancelled", "تم إلغاء التبديلات ورجوع الترتيب القديم.", Color3.fromRGB(255, 50, 50))
-            BtnToggleReorder.ImageColor3 = Color3.fromRGB(200, 200, 200)
-            IsReorderMode = false
-            BtnAddNewTp.Visible = true
-            BtnSaveOrder.Visible = false
-            BtnCancelOrder.Visible = false
-            TxtOrderMode.Visible = false
-            RefreshTpList()
-        end
-    end)
+    BtnSaveOrder.Visible = false
+    BtnCancelOrder.Visible = false
+    TxtOrderMode.Visible = false
+    BtnToggleReorder.ImageColor3 = Color3.fromRGB(200, 200, 200)
+    IsReorderMode = false
+    BtnAddNewTp.Visible = true
+
+    Notify("Cancelled", "تم إلغاء التبديلات.", Color3.fromRGB(255, 50, 50))
+    RefreshTpList()
 end)
 
 UIS.InputBegan:Connect(function(input)
