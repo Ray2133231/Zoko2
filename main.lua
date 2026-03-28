@@ -29,7 +29,6 @@ local function LoadCheckpoints()
     end
     if not SavedCheckpoints[CurrentPlaceId] then SavedCheckpoints[CurrentPlaceId] = {} end
     
-    -- تحديث النقاط القديمة عشان تدعم نظام الترتيب (Order)
     local maxOrder = 0
     for n, d in pairs(SavedCheckpoints[CurrentPlaceId]) do
         if d.Order and d.Order > maxOrder then maxOrder = d.Order end
@@ -260,7 +259,7 @@ local BtnToggleReorder = Instance.new("ImageButton", TpFrame)
 BtnToggleReorder.Size = UDim2.new(0, 20, 0, 20)
 BtnToggleReorder.Position = UDim2.new(1, -60, 0, 7)
 BtnToggleReorder.BackgroundTransparency = 1
-BtnToggleReorder.Image = "rbxassetid://6031280882" -- أيقونة ترتيب
+BtnToggleReorder.Image = "rbxassetid://6031280882"
 BtnToggleReorder.ImageColor3 = Color3.fromRGB(200, 200, 200)
 
 local TpScroll = Instance.new("ScrollingFrame", TpFrame)
@@ -273,6 +272,7 @@ TpScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 local TpLayout = Instance.new("UIListLayout", TpScroll)
 TpLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 TpLayout.Padding = UDim.new(0, 5)
+TpLayout.SortOrder = Enum.SortOrder.LayoutOrder -- مهم جداً للترتيب
 
 local BtnAddNewTp = Instance.new("TextButton", TpFrame)
 BtnAddNewTp.Size = UDim2.new(0.9, 0, 0, 30)
@@ -284,12 +284,11 @@ BtnAddNewTp.Font = Enum.Font.GothamBold
 BtnAddNewTp.TextSize = 14
 Instance.new("UICorner", BtnAddNewTp).CornerRadius = UDim.new(0, 6)
 
--- أزرار حفظ وإلغاء وضع الترتيب
 local BtnSaveOrder = Instance.new("ImageButton", TpFrame)
 BtnSaveOrder.Size = UDim2.new(0, 30, 0, 30)
 BtnSaveOrder.Position = UDim2.new(0.05, 0, 1, -40)
 BtnSaveOrder.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
-BtnSaveOrder.Image = "rbxassetid://6031280882" -- أيقونة حفظ
+BtnSaveOrder.Image = "rbxassetid://6031280882"
 BtnSaveOrder.Visible = false
 Instance.new("UICorner", BtnSaveOrder).CornerRadius = UDim.new(0, 6)
 
@@ -297,7 +296,7 @@ local BtnCancelOrder = Instance.new("ImageButton", TpFrame)
 BtnCancelOrder.Size = UDim2.new(0, 30, 0, 30)
 BtnCancelOrder.Position = UDim2.new(0.95, -30, 1, -40)
 BtnCancelOrder.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-BtnCancelOrder.Image = "rbxassetid://6031094678" -- أيقونة X
+BtnCancelOrder.Image = "rbxassetid://6031094678"
 BtnCancelOrder.Visible = false
 Instance.new("UICorner", BtnCancelOrder).CornerRadius = UDim.new(0, 6)
 
@@ -305,12 +304,13 @@ local TxtOrderMode = Instance.new("TextLabel", TpFrame)
 TxtOrderMode.Size = UDim2.new(0.6, 0, 0, 30)
 TxtOrderMode.Position = UDim2.new(0.2, 0, 1, -40)
 TxtOrderMode.BackgroundTransparency = 1
-TxtOrderMode.Text = "وضع الترتيب (Edit Mode)"
+TxtOrderMode.Text = "اسحب للترتيب (Drag to Reorder)"
 TxtOrderMode.TextColor3 = Color3.fromRGB(255, 150, 0)
 TxtOrderMode.Font = Enum.Font.GothamBold
+TxtOrderMode.TextScaled = true
 TxtOrderMode.Visible = false
 
--- مودل كتابة/تعديل اسم النقطة
+-- مودل إدخال/تعديل الاسم
 local ModalFrame = Instance.new("Frame", ScreenGui)
 ModalFrame.Size = UDim2.new(0, 220, 0, 120)
 ModalFrame.Position = UDim2.new(0.5, -110, 0.5, -60)
@@ -325,6 +325,7 @@ ModalInput.Size = UDim2.new(0.9, 0, 0, 35)
 ModalInput.Position = UDim2.new(0.05, 0, 0, 20)
 ModalInput.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 ModalInput.Text = ""
+ModalInput.ClearTextOnFocus = false -- هذي تحل مشكلة اختفاء النص
 ModalInput.PlaceholderText = "Enter Checkpoint Name..."
 ModalInput.TextColor3 = Color3.fromRGB(255, 255, 255)
 ModalInput.Font = Enum.Font.GothamMedium
@@ -349,7 +350,6 @@ BtnCancelModal.TextColor3 = Color3.fromRGB(255, 255, 255)
 BtnCancelModal.Font = Enum.Font.GothamBold
 Instance.new("UICorner", BtnCancelModal).CornerRadius = UDim.new(0, 6)
 
--- قائمة الرايت كليك
 local ContextMenu = Instance.new("Frame", ScreenGui)
 ContextMenu.Size = UDim2.new(0, 150, 0, 105)
 ContextMenu.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
@@ -394,6 +394,70 @@ local RenameMode = false
 local IsReorderMode = false
 local TempCheckpoints = {}
 
+-----------------------------------
+-- نظام السحب والإفلات (Drag & Drop)
+-----------------------------------
+local DragInfo = {
+    IsDragging = false,
+    Ghost = nil,
+    Placeholder = nil,
+    OffsetY = 0
+}
+
+UIS.InputChanged:Connect(function(input)
+    if IsReorderMode and DragInfo.IsDragging and DragInfo.Ghost then
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            local newY = input.Position.Y - DragInfo.OffsetY
+            DragInfo.Ghost.Position = UDim2.new(0, DragInfo.Placeholder.AbsolutePosition.X, 0, newY)
+            
+            local ghostCenter = DragInfo.Ghost.AbsolutePosition.Y + (DragInfo.Ghost.AbsoluteSize.Y / 2)
+            for _, otherBtn in pairs(TpScroll:GetChildren()) do
+                if otherBtn:IsA("TextButton") and otherBtn ~= DragInfo.Placeholder then
+                    local otherCenter = otherBtn.AbsolutePosition.Y + (otherBtn.AbsoluteSize.Y / 2)
+                    if math.abs(ghostCenter - otherCenter) < (otherBtn.AbsoluteSize.Y / 2) then
+                        local tempOrder = DragInfo.Placeholder.LayoutOrder
+                        DragInfo.Placeholder.LayoutOrder = otherBtn.LayoutOrder
+                        otherBtn.LayoutOrder = tempOrder
+                    end
+                end
+            end
+        end
+    end
+end)
+
+local function EndDrag()
+    if DragInfo.IsDragging then
+        DragInfo.IsDragging = false
+        if DragInfo.Ghost then DragInfo.Ghost:Destroy() end
+        if DragInfo.Placeholder then
+            DragInfo.Placeholder.BackgroundTransparency = 0
+            DragInfo.Placeholder.TextTransparency = 0
+            local icn = DragInfo.Placeholder:FindFirstChild("DragIcon")
+            if icn then icn.ImageTransparency = 0 end
+        end
+        
+        -- حفظ الترتيب الجديد في TempCheckpoints بناءً على الـ LayoutOrder الحالي
+        local btns = {}
+        for _, btn in pairs(TpScroll:GetChildren()) do
+            if btn:IsA("TextButton") and btn:FindFirstChild("DataName") then
+                table.insert(btns, {Name = btn.DataName.Value, LOrder = btn.LayoutOrder})
+            end
+        end
+        table.sort(btns, function(a, b) return a.LOrder < b.LOrder end)
+        for i, b in ipairs(btns) do
+            if TempCheckpoints[b.Name] then
+                TempCheckpoints[b.Name].Order = i
+            end
+        end
+    end
+end
+
+UIS.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        EndDrag()
+    end
+end)
+
 local function RefreshTpList()
     for _, v in pairs(TpScroll:GetChildren()) do
         if v:IsA("Frame") or v:IsA("TextButton") then v:Destroy() end
@@ -411,7 +475,12 @@ local function RefreshTpList()
         local btn = Instance.new("TextButton", TpScroll)
         btn.Size = UDim2.new(0.95, 0, 0, 30)
         btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+        btn.LayoutOrder = item.Data.Order -- الترتيب
         
+        local dn = Instance.new("StringValue", btn)
+        dn.Name = "DataName"
+        dn.Value = item.Name
+
         local displayTxt = item.Name
         if item.Data.AutoJoin then
             displayTxt = "[★] " .. item.Name
@@ -428,35 +497,32 @@ local function RefreshTpList()
         Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
         
         if IsReorderMode then
-            local BtnUp = Instance.new("TextButton", btn)
-            BtnUp.Size = UDim2.new(0, 25, 0, 25)
-            BtnUp.Position = UDim2.new(1, -55, 0, 2)
-            BtnUp.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-            BtnUp.Text = "▲"
-            BtnUp.TextColor3 = Color3.fromRGB(255, 255, 255)
-            Instance.new("UICorner", BtnUp).CornerRadius = UDim.new(0, 4)
-            BtnUp.MouseButton1Click:Connect(function()
-                if i > 1 then
-                    local tempOrder = sortedList[i].Data.Order
-                    sortedList[i].Data.Order = sortedList[i-1].Data.Order
-                    sortedList[i-1].Data.Order = tempOrder
-                    RefreshTpList()
-                end
-            end)
-            
-            local BtnDown = Instance.new("TextButton", btn)
-            BtnDown.Size = UDim2.new(0, 25, 0, 25)
-            BtnDown.Position = UDim2.new(1, -28, 0, 2)
-            BtnDown.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-            BtnDown.Text = "▼"
-            BtnDown.TextColor3 = Color3.fromRGB(255, 255, 255)
-            Instance.new("UICorner", BtnDown).CornerRadius = UDim.new(0, 4)
-            BtnDown.MouseButton1Click:Connect(function()
-                if i < #sortedList then
-                    local tempOrder = sortedList[i].Data.Order
-                    sortedList[i].Data.Order = sortedList[i+1].Data.Order
-                    sortedList[i+1].Data.Order = tempOrder
-                    RefreshTpList()
+            local DragIcon = Instance.new("ImageLabel", btn)
+            DragIcon.Name = "DragIcon"
+            DragIcon.Size = UDim2.new(0, 20, 0, 20)
+            DragIcon.Position = UDim2.new(1, -25, 0.5, -10)
+            DragIcon.BackgroundTransparency = 1
+            DragIcon.Image = "rbxassetid://3926305904" -- أيقونة سحب
+            DragIcon.ImageRectOffset = Vector2.new(36, 36)
+            DragIcon.ImageRectSize = Vector2.new(36, 36)
+            DragIcon.ImageColor3 = Color3.fromRGB(150, 150, 150)
+
+            btn.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                    DragInfo.IsDragging = true
+                    DragInfo.Placeholder = btn
+                    DragInfo.OffsetY = input.Position.Y - btn.AbsolutePosition.Y
+                    
+                    DragInfo.Ghost = btn:Clone()
+                    DragInfo.Ghost.Parent = ScreenGui
+                    DragInfo.Ghost.Size = UDim2.new(0, btn.AbsoluteSize.X, 0, btn.AbsoluteSize.Y)
+                    DragInfo.Ghost.Position = UDim2.new(0, btn.AbsolutePosition.X, 0, btn.AbsolutePosition.Y)
+                    DragInfo.Ghost.BackgroundTransparency = 0.2
+                    DragInfo.Ghost.ZIndex = 100
+                    
+                    btn.BackgroundTransparency = 0.8
+                    btn.TextTransparency = 0.8
+                    DragIcon.ImageTransparency = 0.8
                 end
             end)
         else
@@ -507,7 +573,6 @@ BtnSaveOrder.MouseButton1Click:Connect(function()
             SaveCheckpoints()
             Notify("Saved", "تم حفظ الترتيب الجديد بنجاح!", Color3.fromRGB(0, 255, 127))
             
-            -- أنيميشن سريع للتبديل
             TpScroll.Position = UDim2.new(0, -20, 0, 35)
             TpScroll:TweenPosition(UDim2.new(0, 5, 0, 35), "Out", "Back", 0.3, true)
             
@@ -537,7 +602,6 @@ BtnCancelOrder.MouseButton1Click:Connect(function()
     end)
 end)
 
--- إخفاء المنيو لو ضغطت برا
 UIS.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         if ContextMenu.Visible then
@@ -565,11 +629,16 @@ BtnSaveModal.MouseButton1Click:Connect(function()
     if name ~= "" then
         if RenameMode and SelectedCpName ~= "" then
             local data = SavedCheckpoints[CurrentPlaceId][SelectedCpName]
-            SavedCheckpoints[CurrentPlaceId][name] = data
-            if name ~= SelectedCpName then
-                SavedCheckpoints[CurrentPlaceId][SelectedCpName] = nil
+            if data then
+                SavedCheckpoints[CurrentPlaceId][name] = {
+                    X = data.X, Y = data.Y, Z = data.Z, 
+                    AutoJoin = data.AutoJoin, Order = data.Order
+                }
+                if name ~= SelectedCpName then
+                    SavedCheckpoints[CurrentPlaceId][SelectedCpName] = nil
+                end
+                Notify("Rename", "تم تغيير الاسم إلى: " .. name, Color3.fromRGB(0, 255, 127))
             end
-            Notify("Rename", "تم تغيير الاسم إلى: " .. name, Color3.fromRGB(0, 255, 127))
         elseif Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
             local pos = Player.Character.HumanoidRootPart.Position
             local maxOrder = 0
@@ -583,6 +652,7 @@ BtnSaveModal.MouseButton1Click:Connect(function()
         end
         SaveCheckpoints()
         RefreshTpList()
+        ModalInput.Text = ""
         ModalFrame.Visible = false
     end
 end)
@@ -1121,12 +1191,10 @@ local AimbotLoop = RunService.RenderStepped:Connect(function()
     if Features.Aimbot then
         local targetHead = GetClosestToCenter()
         if targetHead then
-            -- توجيه سلس (Smooth) يسمح بفك الإيم لو حركت الماوس بقوة
             local camCFrame = workspace.CurrentCamera.CFrame
             local newCFrame = CFrame.new(camCFrame.Position, targetHead.Position)
             workspace.CurrentCamera.CFrame = camCFrame:Lerp(newCFrame, 0.25)
             
-            -- TriggerBot (إطلاق تلقائي)
             if not clicking then
                 clicking = true
                 pcall(function()
@@ -1138,7 +1206,6 @@ local AimbotLoop = RunService.RenderStepped:Connect(function()
             end
         end
         
-        -- ميزة No Reload (بدون تعشيق لبعض الألعاب)
         local tool = Player.Character and Player.Character:FindFirstChildOfClass("Tool")
         if tool then
             for _, v in pairs(tool:GetDescendants()) do
@@ -1152,7 +1219,6 @@ local AimbotLoop = RunService.RenderStepped:Connect(function()
         end
     end
 end)
------------------------------------
 
 local ESPLoop = nil
 BtnESP.MouseButton1Click:Connect(function()
