@@ -106,7 +106,7 @@ ScrollFrame.Position = UDim2.new(0, 0, 0, 45)
 ScrollFrame.BackgroundTransparency = 1
 ScrollFrame.ScrollBarThickness = 4
 ScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(0, 212, 255)
-ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 1050)
+ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 1100)
 ScrollFrame.Parent = MainFrame
 
 local ListLayout = Instance.new("UIListLayout")
@@ -773,7 +773,7 @@ local Features = {
     Fly = false, FlyNoclip = false, GodMode = false, InfJump = false, Noclip = false, 
     InstantPrompt = false, SuperHit = false, AntiAFK = true, ControlWand = false, ESP = false,
     CustomSpeed = false, WalkSpeed = 100, CarSpeed = 100, FlySpeed = 100, CarFlySpeed = 100, 
-    CustomJump = false, JumpValue = 100
+    CustomJump = false, JumpValue = 100, Aimbot = false, AimbotFOV = 150
 }
 local CurrentSpeedState = "Walk"
 
@@ -823,14 +823,13 @@ local function CreateInputRow(text, defaultValue, parent)
     return ToggleBtn, InputBox
 end
 
--- إضافة زر نظام الانتقالات في القائمة الرئيسية
 local BtnOpenTeleports = CreateButton("Checkpoints", ScrollFrame)
-
 BtnOpenTeleports.MouseButton1Click:Connect(function()
     TpFrame.Visible = not TpFrame.Visible
     if TpFrame.Visible then RefreshTpList() end
 end)
 
+local BtnAimbot = CreateButton("Aimbot: OFF", ScrollFrame)
 local BtnWand = CreateButton("Control Wand : OFF", ScrollFrame)
 local BtnFly = CreateButton("Fly : OFF", ScrollFrame)
 local BtnFlyNoclip = CreateButton("Fly Noclip : OFF", ScrollFrame)
@@ -869,7 +868,61 @@ local function UpdateSpeedDisplay()
     BoxSpeed.Text = tostring(val)
 end
 
+-----------------------------------
+-- Aimbot System
+-----------------------------------
+local FOVGui = Instance.new("ScreenGui")
+FOVGui.Name = "Zoko_AimbotFOV"
+FOVGui.Parent = ScreenGui
+local FOVFrame = Instance.new("Frame", FOVGui)
+FOVFrame.BackgroundTransparency = 1
+FOVFrame.Size = UDim2.new(0, Features.AimbotFOV * 2, 0, Features.AimbotFOV * 2)
+FOVFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+FOVFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+Instance.new("UICorner", FOVFrame).CornerRadius = UDim.new(1, 0)
+local FOVStroke = Instance.new("UIStroke", FOVFrame)
+FOVStroke.Color = Color3.fromRGB(255, 0, 0)
+FOVStroke.Thickness = 1.5
+FOVFrame.Visible = false
 
+local function GetClosestToCenter()
+    local center = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y / 2)
+    local closestDist = Features.AimbotFOV
+    local closestTarget = nil
+    
+    for _, v in pairs(game.Players:GetPlayers()) do
+        if v ~= Player and v.Character and v.Character:FindFirstChild("Head") and v.Character:FindFirstChild("Humanoid") and v.Character.Humanoid.Health > 0 then
+            local pos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(v.Character.Head.Position)
+            if onScreen then
+                local dist = (Vector2.new(pos.X, pos.Y) - center).Magnitude
+                if dist < closestDist then
+                    closestDist = dist
+                    closestTarget = v.Character.Head
+                end
+            end
+        end
+    end
+    return closestTarget
+end
+
+BtnAimbot.MouseButton1Click:Connect(function()
+    Features.Aimbot = not Features.Aimbot
+    BtnAimbot.Text = "Aimbot: " .. (Features.Aimbot and "ON" or "OFF")
+    BtnAimbot.TextColor3 = Features.Aimbot and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(200, 200, 200)
+    FOVFrame.Visible = Features.Aimbot
+end)
+
+local AimbotLoop = RunService.RenderStepped:Connect(function()
+    if Features.Aimbot then
+        if UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) or UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
+            local targetHead = GetClosestToCenter()
+            if targetHead then
+                workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, targetHead.Position)
+            end
+        end
+    end
+end)
+-----------------------------------
 
 local ESPLoop = nil
 BtnESP.MouseButton1Click:Connect(function()
@@ -1348,6 +1401,7 @@ RestartBtn.MouseButton1Click:Connect(function()
     if FlyLoop then FlyLoop:Disconnect() end
     if FlyNoclipLoop then FlyNoclipLoop:Disconnect() end
     if ESPLoop then ESPLoop:Disconnect() end
+    if AimbotLoop then AimbotLoop:Disconnect() end
     if bg then bg:Destroy() end
     if bv then bv:Destroy() end
     
